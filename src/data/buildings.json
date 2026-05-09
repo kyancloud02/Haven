@@ -1,0 +1,26 @@
+[
+  {
+    "id": "farm",
+    "name": "Farm",
+    "description": "Produces food over time.",
+    "cost": { "gold": 50 },
+    "production": { "food": 5 },
+    "buildTime": 300
+  },
+  {
+    "id": "market",
+    "name": "Market",
+    "description": "Generates gold from trades.",
+    "cost": { "gold": 100 },
+    "production": { "gold": 10 },
+    "buildTime": 600
+  },
+  {
+    "id": "inn",
+    "name": "Inn",
+    "description": "Attracts new characters to your kingdom.",
+    "cost": { "gold": 75 },
+    "production": {},
+    "buildTime": 450
+  }
+]

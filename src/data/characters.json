@@ -1,0 +1,24 @@
+[
+  {
+    "id": "villager_01",
+    "name": "Mira",
+    "role": "Farmer",
+    "sprite": "mira.png",
+    "stats": {
+      "speed": 1.2,
+      "strength": 0.8,
+      "happiness": 100
+    }
+  },
+  {
+    "id": "villager_02",
+    "name": "Theo",
+    "role": "Blacksmith",
+    "sprite": "theo.png",
+    "stats": {
+      "speed": 0.9,
+      "strength": 1.5,
+      "happiness": 90
+    }
+  }
+]

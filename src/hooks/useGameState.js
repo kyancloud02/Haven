@@ -1,0 +1,42 @@
+import { useState } from 'react'
+
+const STORAGE_KEY = 'haven_game_state'
+
+const DEFAULT_STATE = {
+  gold: 50,
+  housingTier: 'Cardboard Box',
+  unlockedHeroes: [
+    { id: 'base_hero', name: 'Base Hero' },
+  ],
+  currentLeaderId: 'king',
+}
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw)
+    // Merge with defaults so new fields are populated on existing saves
+    return { ...DEFAULT_STATE, ...parsed }
+  } catch {
+    return null
+  }
+}
+
+function saveState(state) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
+}
+
+export function useGameState() {
+  const [state, setState] = useState(() => loadState() ?? DEFAULT_STATE)
+
+  function updateState(patch) {
+    setState(prev => {
+      const next = { ...prev, ...patch }
+      saveState(next)
+      return next
+    })
+  }
+
+  return [state, updateState]
+}

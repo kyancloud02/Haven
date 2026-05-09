@@ -1,0 +1,38 @@
+[
+  {
+    "id": "elf_princess",
+    "name": "Elf Princess",
+    "sprite": "elf_princess.png",
+    "permittedRoles": ["King", "Diplomat"]
+  },
+  {
+    "id": "warrior_mulan",
+    "name": "Warrior Mulan",
+    "sprite": "warrior_mulan.png",
+    "permittedRoles": ["Guard", "King", "Explorer"]
+  },
+  {
+    "id": "sun_wukong",
+    "name": "Sun Wukong",
+    "sprite": "sun_wukong.png",
+    "permittedRoles": ["Explorer", "Guard"]
+  },
+  {
+    "id": "sherlock_holmes",
+    "name": "Sherlock Holmes",
+    "sprite": "sherlock_holmes.png",
+    "permittedRoles": ["Diplomat", "Explorer"]
+  },
+  {
+    "id": "robin_hood",
+    "name": "Robin Hood",
+    "sprite": "robin_hood.png",
+    "permittedRoles": ["Guard", "Explorer"]
+  },
+  {
+    "id": "winnie_the_pooh",
+    "name": "Winnie-the-Pooh",
+    "sprite": "winnie_the_pooh.png",
+    "permittedRoles": ["Farmer", "Citizen"]
+  }
+]

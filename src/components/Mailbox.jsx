@@ -1,8 +1,26 @@
+import ParchmentCard from './ParchmentCard'
+
 export default function Mailbox() {
   return (
-    <div className="bg-white rounded-2xl shadow p-6 w-48 text-center">
-      <h2 className="text-lg font-semibold text-blue-700">Mailbox</h2>
-      <p className="text-sm text-gray-500 mt-2">No new letters.</p>
-    </div>
+    <ParchmentCard shape="a" tilt={-1.8} className="w-52">
+      <h2
+        className="text-sm font-bold tracking-widest uppercase mb-3"
+        style={{ color: '#7A4F1E', fontFamily: 'Georgia, serif' }}
+      >
+        Mailbox
+      </h2>
+      <p
+        className="text-sm leading-snug"
+        style={{ color: '#6B5030', fontFamily: 'Georgia, serif' }}
+      >
+        No letters yet.
+      </p>
+      <p
+        className="text-xs mt-3 opacity-60"
+        style={{ color: '#8B6A3A', fontFamily: 'Georgia, serif' }}
+      >
+        Check back soon.
+      </p>
+    </ParchmentCard>
   )
 }

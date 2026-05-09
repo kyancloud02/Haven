@@ -3,73 +3,36 @@
     "id": "elf_princess",
     "name": "Elf Princess",
     "sprite": "elf_princess.png",
-    "permittedRoles": ["King", "Diplomat"],
-    "stats": {
-      "speed": 1.1,
-      "strength": 0.7,
-      "happiness": 100,
-      "charisma": 1.8
-    }
+    "permittedRoles": ["King", "Diplomat"]
   },
   {
     "id": "warrior_mulan",
     "name": "Warrior Mulan",
     "sprite": "warrior_mulan.png",
-    "permittedRoles": ["Guard", "King", "Explorer"],
-    "notes": "Historical armor style",
-    "stats": {
-      "speed": 1.4,
-      "strength": 1.6,
-      "happiness": 95,
-      "charisma": 1.2
-    }
+    "permittedRoles": ["Guard", "King", "Explorer"]
   },
   {
     "id": "sun_wukong",
     "name": "Sun Wukong",
     "sprite": "sun_wukong.png",
-    "permittedRoles": ["Explorer", "Guard"],
-    "stats": {
-      "speed": 2.0,
-      "strength": 1.9,
-      "happiness": 88,
-      "charisma": 1.0
-    }
+    "permittedRoles": ["Explorer", "Guard"]
   },
   {
     "id": "sherlock_holmes",
     "name": "Sherlock Holmes",
     "sprite": "sherlock_holmes.png",
-    "permittedRoles": ["Diplomat", "Explorer"],
-    "stats": {
-      "speed": 1.0,
-      "strength": 0.8,
-      "happiness": 75,
-      "charisma": 1.5
-    }
+    "permittedRoles": ["Diplomat", "Explorer"]
   },
   {
     "id": "robin_hood",
     "name": "Robin Hood",
     "sprite": "robin_hood.png",
-    "permittedRoles": ["Guard", "Explorer"],
-    "stats": {
-      "speed": 1.7,
-      "strength": 1.3,
-      "happiness": 92,
-      "charisma": 1.4
-    }
+    "permittedRoles": ["Guard", "Explorer"]
   },
   {
     "id": "winnie_the_pooh",
     "name": "Winnie-the-Pooh",
     "sprite": "winnie_the_pooh.png",
-    "permittedRoles": ["Farmer", "Citizen"],
-    "stats": {
-      "speed": 0.6,
-      "strength": 0.5,
-      "happiness": 100,
-      "charisma": 1.6
-    }
+    "permittedRoles": ["Farmer", "Citizen"]
   }
 ]

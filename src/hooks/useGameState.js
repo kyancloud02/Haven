@@ -2,10 +2,22 @@ import { useState } from 'react'
 
 const STORAGE_KEY = 'haven_game_state'
 
+const DEFAULT_STATE = {
+  gold: 50,
+  housingTier: 'Cardboard Box',
+  unlockedHeroes: [
+    { id: 'base_hero', name: 'Base Hero' },
+  ],
+  currentLeaderId: 'king',
+}
+
 function loadState() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
-    return raw ? JSON.parse(raw) : null
+    if (!raw) return null
+    const parsed = JSON.parse(raw)
+    // Merge with defaults so new fields are populated on existing saves
+    return { ...DEFAULT_STATE, ...parsed }
   } catch {
     return null
   }
@@ -15,15 +27,8 @@ function saveState(state) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
 }
 
-const defaultState = {
-  gold: 0,
-  buildings: [],
-  characters: [],
-  lastSeen: Date.now(),
-}
-
 export function useGameState() {
-  const [state, setState] = useState(() => loadState() ?? defaultState)
+  const [state, setState] = useState(() => loadState() ?? DEFAULT_STATE)
 
   function updateState(patch) {
     setState(prev => {

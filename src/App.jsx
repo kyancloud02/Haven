@@ -1,15 +1,17 @@
 import { useState } from 'react'
-import { AnimatePresence } from 'framer-motion'
+import { AnimatePresence, motion } from 'framer-motion'
 import WorldStage from './components/WorldStage'
 import CharacterSprite from './components/CharacterSprite'
 import AccountPanel from './components/AccountPanel'
 import ShopPanel from './components/ShopPanel'
+import MailboxPanel from './components/MailboxPanel'
 import { useGameState } from './hooks/useGameState'
+import { useDailyReport } from './hooks/useDailyReport'
 import characters from './data/characters.json'
 
 const IS_DEV = import.meta.env.DEV
 
-// ─── Icon components ──────────────────────────────────────────────────────────
+// ─── HUD icon components ──────────────────────────────────────────────────────
 function ShopIcon() {
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
@@ -18,6 +20,17 @@ function ShopIcon() {
       <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/>
       <line x1="3" y1="6" x2="21" y2="6"/>
       <path d="M16 10a4 4 0 01-8 0"/>
+    </svg>
+  )
+}
+
+function MailIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+    >
+      <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+      <polyline points="22,6 12,13 2,6"/>
     </svg>
   )
 }
@@ -33,12 +46,57 @@ function PersonIcon() {
   )
 }
 
+// ─── HUD button with optional notification badge ──────────────────────────────
+function HudButton({ onClick, label, badge = false, children }) {
+  return (
+    <div className="relative">
+      <button
+        onClick={onClick}
+        className="w-12 h-12 rounded-full flex items-center justify-center transition-all duration-150 hover:scale-105 active:scale-95"
+        style={{
+          background: 'rgba(255,255,255,0.92)',
+          boxShadow: '0 2px 14px rgba(0,0,0,0.35)',
+          color: '#1a1a2e',
+        }}
+        aria-label={label}
+      >
+        {children}
+      </button>
+
+      <AnimatePresence>
+        {badge && (
+          <motion.span
+            className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full"
+            style={{ background: '#FF4040', boxShadow: '0 0 6px rgba(255,60,60,0.7)' }}
+            initial={{ scale: 0 }}
+            animate={{ scale: [1, 1.15, 1] }}
+            exit={{ scale: 0 }}
+            transition={{ duration: 0.3, scale: { duration: 1.5, repeat: Infinity, ease: 'easeInOut' } }}
+          />
+        )}
+      </AnimatePresence>
+    </div>
+  )
+}
+
 // ─── Root ─────────────────────────────────────────────────────────────────────
 export default function App() {
   const [gameState, updateState] = useGameState()
-  const [debugHour, setDebugHour] = useState(() => new Date().getHours())
+  const [debugHour, setDebugHour]     = useState(() => new Date().getHours())
   const [shopOpen, setShopOpen]       = useState(false)
+  const [mailboxOpen, setMailboxOpen] = useState(false)
   const [accountOpen, setAccountOpen] = useState(false)
+
+  const { activeReport, collectReport, resetReport } = useDailyReport(
+    gameState.currentLeaderId,
+    IS_DEV ? debugHour : undefined,
+  )
+
+  function closeAll() {
+    setShopOpen(false)
+    setMailboxOpen(false)
+    setAccountOpen(false)
+  }
 
   return (
     <div className="relative w-full h-screen overflow-hidden bg-stone-950">
@@ -80,34 +138,30 @@ export default function App() {
 
         {/* Top-right: icon buttons */}
         <div className="absolute top-5 right-5 flex gap-3 pointer-events-auto">
-          <button
-            onClick={() => { setShopOpen(o => !o); setAccountOpen(false) }}
-            className="w-12 h-12 rounded-full flex items-center justify-center transition-all duration-150 hover:scale-105 active:scale-95"
-            style={{
-              background: 'rgba(255,255,255,0.92)',
-              boxShadow: '0 2px 14px rgba(0,0,0,0.35)',
-              color: '#1a1a2e',
-            }}
-            aria-label="Shop"
+          <HudButton
+            label="Shop"
+            onClick={() => { closeAll(); setShopOpen(true) }}
           >
             <ShopIcon />
-          </button>
+          </HudButton>
 
-          <button
-            onClick={() => { setAccountOpen(o => !o); setShopOpen(false) }}
-            className="w-12 h-12 rounded-full flex items-center justify-center transition-all duration-150 hover:scale-105 active:scale-95"
-            style={{
-              background: 'rgba(255,255,255,0.92)',
-              boxShadow: '0 2px 14px rgba(0,0,0,0.35)',
-              color: '#1a1a2e',
-            }}
-            aria-label="Account"
+          <HudButton
+            label="Mailbox"
+            badge={!!activeReport}
+            onClick={() => { closeAll(); setMailboxOpen(true) }}
+          >
+            <MailIcon />
+          </HudButton>
+
+          <HudButton
+            label="Account"
+            onClick={() => { closeAll(); setAccountOpen(true) }}
           >
             <PersonIcon />
-          </button>
+          </HudButton>
         </div>
 
-        {/* Characters at ground level — ~10% from bottom matches scene ground */}
+        {/* Characters at ground level */}
         <div
           className="absolute left-0 right-0 flex justify-center items-end gap-4 flex-wrap pointer-events-auto"
           style={{ bottom: '9%', paddingInline: '5%' }}
@@ -126,8 +180,22 @@ export default function App() {
 
       {/* ── Sliding panels ── */}
       <AnimatePresence>
-        {shopOpen && <ShopPanel key="shop" onClose={() => setShopOpen(false)} />}
+        {shopOpen && (
+          <ShopPanel key="shop" onClose={() => setShopOpen(false)} />
+        )}
       </AnimatePresence>
+
+      <AnimatePresence>
+        {mailboxOpen && (
+          <MailboxPanel
+            key="mailbox"
+            activeReport={activeReport}
+            onCollect={() => { collectReport(); setMailboxOpen(false) }}
+            onClose={() => setMailboxOpen(false)}
+          />
+        )}
+      </AnimatePresence>
+
       <AnimatePresence>
         {accountOpen && (
           <AccountPanel
@@ -135,6 +203,7 @@ export default function App() {
             onClose={() => setAccountOpen(false)}
             debugHour={debugHour}
             onDebugHourChange={setDebugHour}
+            onResetReport={resetReport}
           />
         )}
       </AnimatePresence>

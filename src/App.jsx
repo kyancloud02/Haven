@@ -87,6 +87,11 @@ export default function App() {
   const [mailboxOpen, setMailboxOpen] = useState(false)
   const [accountOpen, setAccountOpen] = useState(false)
 
+  // Blessing is live if its expiry date is today or later
+  const today = new Date()
+  const todayKey = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`
+  const isBlessingLive = gameState.blessing && gameState.blessing.expiresDate >= todayKey
+
   const { activeReport, collectReport, resetReport } = useDailyReport(
     gameState.currentLeaderId,
     IS_DEV ? debugHour : undefined,
@@ -121,19 +126,52 @@ export default function App() {
           >
             Haven
           </h1>
-          <p
-            style={{
-              fontFamily: "'Nunito', sans-serif",
-              fontSize: 'clamp(0.7rem, 1.8vw, 0.9rem)',
-              color: 'rgba(255,255,255,0.70)',
-              marginTop: '2px',
-              letterSpacing: '0.08em',
-              textShadow: '0 1px 8px rgba(0,0,0,0.9)',
-              fontWeight: 600,
-            }}
-          >
-            {characters.length} citizens
-          </p>
+          <div className="flex items-center gap-3 mt-1 flex-wrap">
+            <p
+              style={{
+                fontFamily: "'Nunito', sans-serif",
+                fontSize: 'clamp(0.7rem, 1.8vw, 0.9rem)',
+                color: 'rgba(255,255,255,0.60)',
+                letterSpacing: '0.07em',
+                textShadow: '0 1px 8px rgba(0,0,0,0.9)',
+                fontWeight: 600,
+              }}
+            >
+              {characters.length} citizens
+            </p>
+
+            <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: '0.7rem' }}>·</span>
+
+            <p
+              style={{
+                fontFamily: "'Nunito', sans-serif",
+                fontSize: 'clamp(0.7rem, 1.8vw, 0.9rem)',
+                color: '#F0C840',
+                letterSpacing: '0.06em',
+                textShadow: '0 1px 8px rgba(0,0,0,0.9)',
+                fontWeight: 700,
+              }}
+            >
+              ◈ {gameState.gold}g
+            </p>
+
+            {isBlessingLive && (
+              <motion.span
+                style={{
+                  fontFamily: "'Nunito', sans-serif",
+                  fontSize: '0.65rem',
+                  color: '#FFD060',
+                  fontWeight: 800,
+                  textShadow: '0 0 8px rgba(255,200,0,0.6)',
+                  letterSpacing: '0.05em',
+                }}
+                animate={{ opacity: [0.7, 1, 0.7] }}
+                transition={{ duration: 2, repeat: Infinity }}
+              >
+                ✦ Blessed
+              </motion.span>
+            )}
+          </div>
         </div>
 
         {/* Top-right: icon buttons */}
@@ -181,7 +219,13 @@ export default function App() {
       {/* ── Sliding panels ── */}
       <AnimatePresence>
         {shopOpen && (
-          <ShopPanel key="shop" onClose={() => setShopOpen(false)} />
+          <ShopPanel
+            key="shop"
+            onClose={() => setShopOpen(false)}
+            gameState={gameState}
+            updateState={updateState}
+            activeReport={activeReport}
+          />
         )}
       </AnimatePresence>
 

@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { useGameTime } from '../hooks/useGameTime'
+import { useGameTime, getTimeState } from '../hooks/useGameTime'
 
 // ─── Per-state palettes ────────────────────────────────────────────────────────
 const THEMES = {
@@ -96,8 +96,9 @@ const CLOUDS = [
 const EASE = { duration: 2.5, ease: 'easeInOut' }
 
 // ─── Component ─────────────────────────────────────────────────────────────────
-export default function WorldStage() {
-  const timeState = useGameTime()
+export default function WorldStage({ overrideHour }) {
+  const realTimeState = useGameTime()
+  const timeState = overrideHour !== undefined ? getTimeState(overrideHour) : realTimeState
   const T = THEMES[timeState]
 
   return (

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
+import { motion, AnimatePresence, useMotionValue, animate } from 'framer-motion'
 import { SPRITES, CHARACTER_ACCENT } from './CharacterSprites'
 import dialogue from '../data/dialogue.json'
 
@@ -170,13 +170,17 @@ export default function CharacterSprite({
   timeState = 'AWAY',
   totalCharacters = 6,
 }) {
-  const [menu, setMenu]     = useState(null)
-  const [bark, setBark]     = useState(null)
+  const [menu, setMenu]         = useState(null)
+  const [bark, setBark]         = useState(null)
   const [dragging, setDragging] = useState(false)
   const barkTimer  = useRef(null)
   const isDragging = useRef(false)
   const isLeader   = gameState.currentLeaderId === heroData.id
   const SpriteCmp  = SPRITES[heroData.id]
+
+  // Separate motion values so x persists after drop while y springs back
+  const dragX = useMotionValue(0)
+  const dragY = useMotionValue(0)
 
   useEffect(() => () => clearTimeout(barkTimer.current), [])
 
@@ -222,9 +226,9 @@ export default function CharacterSprite({
       <motion.div
         drag
         dragMomentum={false}
+        whileHover={!dragging ? { scale: 1.04 } : {}}
         style={{
           position: 'absolute',
-          // Use calc to center the 64px-wide sprite on the percentage position
           left: `calc(${leftPercent}% - 32px)`,
           bottom: '9%',
           cursor: dragging ? 'grabbing' : 'grab',
@@ -232,16 +236,18 @@ export default function CharacterSprite({
           userSelect: 'none',
           touchAction: 'none',
           pointerEvents: 'auto',
+          x: dragX,
+          y: dragY,
         }}
-        whileHover={!dragging ? { scale: 1.04 } : {}}
         onDragStart={() => {
           isDragging.current = true
           setDragging(true)
         }}
         onDragEnd={() => {
-          // small delay so the click handler that fires after dragEnd sees isDragging = true
           setTimeout(() => { isDragging.current = false }, 80)
           setDragging(false)
+          // Spring Y back to ground; X stays where they dropped
+          animate(dragY, 0, { type: 'spring', stiffness: 380, damping: 28 })
         }}
         onClick={handleClick}
         onContextMenu={handleContextMenu}

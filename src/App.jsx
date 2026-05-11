@@ -110,7 +110,7 @@ export default function App() {
     <div className="relative w-full h-screen overflow-hidden bg-stone-950">
 
       {/* ── Full-screen world scene ── */}
-      <WorldStage overrideHour={IS_DEV ? debugHour : undefined} />
+      <WorldStage overrideHour={IS_DEV ? debugHour : undefined} housingTier={gameState.housingTier} />
 
       {/* ── HUD overlay ── */}
       <div className="absolute inset-0 pointer-events-none">

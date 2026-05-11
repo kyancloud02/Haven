@@ -1,0 +1,235 @@
+{
+  "elf_princess": {
+    "AWAY": [
+      {
+        "message": "The birch grove near the northern ridge is behaving strangely. The bark peeled back in perfect spirals overnight, as though something beneath is trying to communicate. I've taken samples. I'll need a light source to study them properly after dark.",
+        "itemHint": "I could use an oil lamp to study the samples tonight.",
+        "photoUrl": null
+      },
+      {
+        "message": "Found a species of moth I cannot identify — wingspan of roughly nine centimetres, bioluminescent dusting on the hindwings. It did not flee when approached. It seemed, if anything, curious. I've noted the coordinates.",
+        "itemHint": null,
+        "photoUrl": null
+      }
+    ],
+    "HOME": [
+      {
+        "message": "The soil near the eastern well has an unusual mineral composition — high salt, almost no root activity. Either something was buried here long ago, or something is about to grow. I'm watching it.",
+        "itemHint": null,
+        "photoUrl": null
+      },
+      {
+        "message": "Three of the border stones have shifted since last week. Not fallen — shifted. Precisely four inches each, in the same direction. They are almost certainly not moving on their own. Almost.",
+        "itemHint": null,
+        "photoUrl": null
+      }
+    ],
+    "SLEEP": [
+      {
+        "message": "A moth the size of my palm tapped on the window three times at exactly midnight, then left. I am choosing to classify this as coincidence. My notes suggest otherwise.",
+        "itemHint": null,
+        "photoUrl": null
+      },
+      {
+        "message": "The wind last night carried pollen from somewhere east — nothing we planted, nothing I recognise from the regional index. I've preserved a sample but I'll need better light to examine it.",
+        "itemHint": "A lamp would help me study the pollen sample tonight.",
+        "photoUrl": null
+      }
+    ]
+  },
+
+  "warrior_mulan": {
+    "AWAY": [
+      {
+        "message": "Eastern fence line is holding. Western section has a gap — large enough for something small to pass through. The brush is too thick to see through properly. We need the scythe before I can confirm what's been using it.",
+        "itemHint": "We need the scythe to clear the western brush.",
+        "photoUrl": null
+      },
+      {
+        "message": "The south trail has two new erosion points after the rain. Passable, but not for long. I've marked them with stones. Recommend we address it before the next wet season.",
+        "itemHint": null,
+        "photoUrl": null
+      }
+    ],
+    "HOME": [
+      {
+        "message": "The training field grass is out of control again. I attempted to clear it by hand. That was a poor decision. We need the scythe. This is not a request.",
+        "itemHint": "The scythe situation has become critical.",
+        "photoUrl": null
+      },
+      {
+        "message": "Made contact with the outer settlement traders today. They're moving east for the season. Shared what we could spare. Relations remain good. No further action required at this time.",
+        "itemHint": null,
+        "photoUrl": null
+      }
+    ],
+    "SLEEP": [
+      {
+        "message": "Night watch was quiet. Spotted a fire on the ridge — distant, moving slowly eastward. Most likely travellers. I'll confirm at first light. Keeping watch until then.",
+        "itemHint": null,
+        "photoUrl": null
+      },
+      {
+        "message": "Found unfamiliar boot prints near the storehouse. Not fresh, but not ours either. I'm maintaining watch tonight. A proper lantern would make this considerably easier.",
+        "itemHint": "A lantern would help with the night watch.",
+        "photoUrl": null
+      }
+    ]
+  },
+
+  "sun_wukong": {
+    "AWAY": [
+      {
+        "message": "Leaped to the eastern peak this morning just to see what was up there. A hawk, mostly. Also: our kingdom looks genuinely impressive from that altitude. The hawk agreed, I think. It didn't leave.",
+        "itemHint": null,
+        "photoUrl": null
+      },
+      {
+        "message": "Encountered three individuals on the northern road who seemed to have the wrong idea about what belongs to whom. We had a conversation. They reconsidered their position. Everyone went home.",
+        "itemHint": null,
+        "photoUrl": null
+      }
+    ],
+    "HOME": [
+      {
+        "message": "Counted forty-seven clouds today. The forty-eighth appeared at dusk and behaved suspiciously. Maintained visual contact until it dispersed naturally at sunset. No incident. Logging it anyway.",
+        "itemHint": null,
+        "photoUrl": null
+      },
+      {
+        "message": "Taught the squirrels a new trick today. They weren't interested at first. They are interested now. I prefer not to elaborate on the method.",
+        "itemHint": null,
+        "photoUrl": null
+      }
+    ],
+    "SLEEP": [
+      {
+        "message": "Spent two hours at the summit watching the stars. They don't technically move — I'm aware. But they seem to move more when no one else is watching. I'm taking this seriously.",
+        "itemHint": null,
+        "photoUrl": null
+      },
+      {
+        "message": "Found an abandoned campsite on the eastern slope — cold fire pit, a honey pot left behind, still sealed. Could be useful. I left it in case the owner returns. For twenty more minutes.",
+        "itemHint": "Found an abandoned honey pot on the eastern slope.",
+        "photoUrl": null
+      }
+    ]
+  },
+
+  "sherlock_holmes": {
+    "AWAY": [
+      {
+        "message": "Fourteen irregularities in the eastern path's soil. Thirteen resolved. The fourteenth is a boot print — adult, right foot, slight inward pronation — that matches no resident of this kingdom. Investigation is ongoing.",
+        "itemHint": null,
+        "photoUrl": null
+      },
+      {
+        "message": "The miller's cat has been sitting facing due north every evening for six consecutive days. I am tracking this. Most would call it instinct. I am calling it data until proven otherwise.",
+        "itemHint": null,
+        "photoUrl": null
+      }
+    ],
+    "HOME": [
+      {
+        "message": "Someone moved the small stone marker by the well precisely four inches to the east. I measured. This was deliberate. The list of people with both motive and access is short. I am watching it.",
+        "itemHint": null,
+        "photoUrl": null
+      },
+      {
+        "message": "Cross-referenced this week's weather against crop yield variance. The northern field drains faster than our maps indicate — suggesting either an unmarked channel or a structural anomaly. I need better light to examine it after dark.",
+        "itemHint": "I'll need a lamp to examine the northern field tonight.",
+        "photoUrl": null
+      }
+    ],
+    "SLEEP": [
+      {
+        "message": "Couldn't sleep. Used the time to trace the origin of a wax seal I found near the gate. It belongs to a merchant family last recorded here three seasons ago. Their route shouldn't bring them back yet. Interesting.",
+        "itemHint": null,
+        "photoUrl": null
+      },
+      {
+        "message": "At 2:14 this morning, an owl called twice, paused, then called once more. This is not standard owl behaviour. I've begun a log. Seven entries so far. Pattern emerging.",
+        "itemHint": null,
+        "photoUrl": null
+      }
+    ]
+  },
+
+  "robin_hood": {
+    "AWAY": [
+      {
+        "message": "Left a third of the harvest surplus at the old oak crossroads before sunrise. I didn't see who collected it. That's entirely the point. The ledger is slightly more balanced than it was yesterday.",
+        "itemHint": null,
+        "photoUrl": null
+      },
+      {
+        "message": "Met a family on the north road — three days from anywhere, travelling light. Gave them my cloak. It was cold and they needed it considerably more than I do. A replacement wouldn't go unappreciated.",
+        "itemHint": "My cloak is gone. A warm blanket would do.",
+        "photoUrl": null
+      }
+    ],
+    "HOME": [
+      {
+        "message": "Redistributed what we could spare from the western stores this evening. No fanfare, no witnesses. The third cottage family will find something useful by their door in the morning.",
+        "itemHint": null,
+        "photoUrl": null
+      },
+      {
+        "message": "A merchant insisted the north road was 'too dangerous' for common travellers. I made adjustments. He disagreed with my methods, which I found ironic given his pricing structure.",
+        "itemHint": null,
+        "photoUrl": null
+      }
+    ],
+    "SLEEP": [
+      {
+        "message": "Left a pair of boots by the door of the family in the third cottage — theirs were completely worn through, and winter is close. This is not theft. This is arithmetic with better priorities.",
+        "itemHint": "The third cottage needs new boots. I left mine.",
+        "photoUrl": null
+      },
+      {
+        "message": "The quiet after midnight is the most useful part of the day. Did three good things before sunrise. Back before anyone woke. No witnesses — which is precisely how good things should happen.",
+        "itemHint": null,
+        "photoUrl": null
+      }
+    ]
+  },
+
+  "winnie_the_pooh": {
+    "AWAY": [
+      {
+        "message": "Went to find the bees today. Found the bees. The bees did not find me, which is the best possible outcome. Also discovered a very large patch of clover and sat in it for quite some time.",
+        "itemHint": null,
+        "photoUrl": null
+      },
+      {
+        "message": "Visited the honey tree at the eastern meadow. It was empty. I sat with it for a while out of respect. I think it appreciated this. Tomorrow I shall look for a much larger pot.",
+        "itemHint": "We are going to need a bigger honey pot.",
+        "photoUrl": null
+      }
+    ],
+    "HOME": [
+      {
+        "message": "Something is happening in the kitchen and it is probably dinner. I have positioned myself nearby in a strategic and patient manner. I have been here for some time. I am committed.",
+        "itemHint": null,
+        "photoUrl": null
+      },
+      {
+        "message": "The honey stores are lower than I expected. I have begun a formal investigation. Progress has been slow because I keep needing to check whether any is left. It is a complex case.",
+        "itemHint": "The honey situation requires a larger pot at minimum.",
+        "photoUrl": null
+      }
+    ],
+    "SLEEP": [
+      {
+        "message": "Dreamed there was a very large honey pot waiting at the top of the hill. Woke up. Walked to the hill. There was not. I remained there for some time in case this changed. It did not.",
+        "itemHint": null,
+        "photoUrl": null
+      },
+      {
+        "message": "Could not sleep because I was thinking about honey, and then about warm blankets, and then about both at the same time. This was very pleasant thinking. I recommend it.",
+        "itemHint": "A warm blanket would make the thinking considerably better.",
+        "photoUrl": null
+      }
+    ]
+  }
+}

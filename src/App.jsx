@@ -202,22 +202,18 @@ export default function App() {
           </HudButton>
         </div>
 
-        {/* Characters at ground level */}
-        <div
-          className="absolute left-0 right-0 flex justify-center items-end gap-4 flex-wrap pointer-events-auto"
-          style={{ bottom: '9%', paddingInline: '5%' }}
-        >
-          {characters.map((hero, i) => (
-            <CharacterSprite
-              key={hero.id}
-              heroData={hero}
-              gameState={gameState}
-              updateState={updateState}
-              spriteIndex={i}
-              timeState={effectiveTimeState}
-            />
-          ))}
-        </div>
+        {/* Characters — absolutely positioned, freely draggable */}
+        {characters.map((hero, i) => (
+          <CharacterSprite
+            key={hero.id}
+            heroData={hero}
+            gameState={gameState}
+            updateState={updateState}
+            spriteIndex={i}
+            timeState={effectiveTimeState}
+            totalCharacters={characters.length}
+          />
+        ))}
       </div>
 
       {/* ── Sliding panels ── */}

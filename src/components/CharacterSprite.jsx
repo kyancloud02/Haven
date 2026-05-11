@@ -18,9 +18,8 @@ function SpeechBubble({ heroData, text, onDismiss }) {
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: 4, scale: 0.92 }}
       transition={{ duration: 0.2 }}
-      onClick={onDismiss}
+      onClick={e => { e.stopPropagation(); onDismiss() }}
     >
-      {/* Bubble body */}
       <div
         className="rounded-2xl px-3 pt-2 pb-2.5 cursor-pointer"
         style={{
@@ -30,7 +29,6 @@ function SpeechBubble({ heroData, text, onDismiss }) {
           boxShadow: `0 4px 20px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.04)`,
         }}
       >
-        {/* Character name pill */}
         <span
           className="inline-block rounded-full px-2 py-0.5 mb-1.5 text-[10px] font-black tracking-wide uppercase"
           style={{
@@ -43,7 +41,6 @@ function SpeechBubble({ heroData, text, onDismiss }) {
           {firstName}
         </span>
 
-        {/* Bark text */}
         <p
           style={{
             fontFamily: "'Nunito', sans-serif",
@@ -56,7 +53,6 @@ function SpeechBubble({ heroData, text, onDismiss }) {
           "{text}"
         </p>
 
-        {/* Drain bar */}
         <div
           className="mt-2 rounded-full overflow-hidden"
           style={{ height: 2, background: 'rgba(255,255,255,0.08)' }}
@@ -165,20 +161,29 @@ function ContextMenu({ x, y, heroName, isLeader, onCoronate, onClose }) {
   )
 }
 
-
 // ─── CharacterSprite ──────────────────────────────────────────────────────────
-export default function CharacterSprite({ heroData, gameState, updateState, spriteIndex = 0, timeState = 'AWAY' }) {
-  const [menu, setMenu]   = useState(null)
-  const [bark, setBark]   = useState(null)
-  const barkTimer         = useRef(null)
-  const isLeader = gameState.currentLeaderId === heroData.id
-  const SpriteCmp = SPRITES[heroData.id]
+export default function CharacterSprite({
+  heroData,
+  gameState,
+  updateState,
+  spriteIndex = 0,
+  timeState = 'AWAY',
+  totalCharacters = 6,
+}) {
+  const [menu, setMenu]     = useState(null)
+  const [bark, setBark]     = useState(null)
+  const [dragging, setDragging] = useState(false)
+  const barkTimer  = useRef(null)
+  const isDragging = useRef(false)
+  const isLeader   = gameState.currentLeaderId === heroData.id
+  const SpriteCmp  = SPRITES[heroData.id]
 
-  // Clean up bark timer on unmount
   useEffect(() => () => clearTimeout(barkTimer.current), [])
 
+  // Left-click: bark (only when not dragging)
   const handleClick = useCallback(() => {
-    // Dismiss if already showing
+    if (isDragging.current) return
+
     if (bark) {
       clearTimeout(barkTimer.current)
       setBark(null)
@@ -195,11 +200,9 @@ export default function CharacterSprite({ heroData, gameState, updateState, spri
 
   const handleContextMenu = useCallback((e) => {
     e.preventDefault()
-    const vw = window.innerWidth
-    const vh = window.innerHeight
     setMenu({
-      x: Math.min(e.clientX, vw - 180),
-      y: Math.min(e.clientY, vh - 100),
+      x: Math.min(e.clientX, window.innerWidth  - 180),
+      y: Math.min(e.clientY, window.innerHeight - 100),
     })
   }, [])
 
@@ -207,77 +210,103 @@ export default function CharacterSprite({ heroData, gameState, updateState, spri
     updateState({ currentLeaderId: heroData.id })
   }, [heroData.id, updateState])
 
-  // Deterministic idle float per character
+  // Initial position: spread characters evenly along the bottom
+  const spread      = totalCharacters > 1 ? 84 / (totalCharacters - 1) : 0
+  const leftPercent = 8 + spriteIndex * spread  // 8% – 92%
+
   const floatDuration = 2.8 + spriteIndex * 0.38
   const floatDelay    = spriteIndex * 0.52
 
   return (
     <>
-      <div className="relative flex flex-col items-center select-none">
-        <AnimatePresence>
-          {isLeader && <Crown key="crown" />}
-        </AnimatePresence>
-
-        {/* Speech bubble anchored above the floating sprite */}
-        <div className="relative">
+      <motion.div
+        drag
+        dragMomentum={false}
+        style={{
+          position: 'absolute',
+          // Use calc to center the 64px-wide sprite on the percentage position
+          left: `calc(${leftPercent}% - 32px)`,
+          bottom: '9%',
+          cursor: dragging ? 'grabbing' : 'grab',
+          zIndex: dragging ? 100 : 1,
+          userSelect: 'none',
+          touchAction: 'none',
+          pointerEvents: 'auto',
+        }}
+        whileHover={!dragging ? { scale: 1.04 } : {}}
+        onDragStart={() => {
+          isDragging.current = true
+          setDragging(true)
+        }}
+        onDragEnd={() => {
+          // small delay so the click handler that fires after dragEnd sees isDragging = true
+          setTimeout(() => { isDragging.current = false }, 80)
+          setDragging(false)
+        }}
+        onClick={handleClick}
+        onContextMenu={handleContextMenu}
+      >
+        <div className="relative flex flex-col items-center select-none">
           <AnimatePresence>
-            {bark && (
-              <SpeechBubble
-                key="bubble"
-                heroData={heroData}
-                text={bark}
-                onDismiss={() => { clearTimeout(barkTimer.current); setBark(null) }}
-              />
-            )}
+            {isLeader && <Crown key="crown" />}
           </AnimatePresence>
 
-          <motion.div
-            className="cursor-pointer"
-            style={isLeader ? { filter: 'drop-shadow(0 0 8px rgba(255,200,0,0.7))' } : {}}
-            animate={{ y: [0, -5, 0] }}
-            transition={{ duration: floatDuration, repeat: Infinity, ease: 'easeInOut', delay: floatDelay }}
-            whileHover={{ scale: 1.1, y: -8 }}
-            whileTap={{ scale: 0.93 }}
-            onClick={handleClick}
-            onContextMenu={handleContextMenu}
-          >
-          {SpriteCmp ? <SpriteCmp /> : (
-            <svg viewBox="0 0 64 96" width="64" height="96">
-              <ellipse cx="32" cy="92" rx="18" ry="3.5" fill="rgba(0,0,0,0.22)"/>
-              <circle cx="32" cy="55" r="28" fill="#888"/>
-              <circle cx="32" cy="33" r="18" fill="#AAA"/>
-            </svg>
-          )}
-          </motion.div>
-        </div>
+          {/* Bubble + sprite wrapper */}
+          <div className="relative">
+            <AnimatePresence>
+              {bark && (
+                <SpeechBubble
+                  key="bubble"
+                  heroData={heroData}
+                  text={bark}
+                  onDismiss={() => { clearTimeout(barkTimer.current); setBark(null) }}
+                />
+              )}
+            </AnimatePresence>
 
-        {/* Name tag */}
-        <p
-          className="mt-1.5 text-xs font-bold text-center text-white/90 leading-tight"
-          style={{
-            fontFamily: "'Nunito', sans-serif",
-            textShadow: '0 1px 4px rgba(0,0,0,0.9)',
-            maxWidth: 68,
-          }}
-        >
-          {heroData.name.split(' ')[0]}
-        </p>
-
-        {/* Leader tag */}
-        <AnimatePresence>
-          {isLeader && (
-            <motion.span
-              className="mt-0.5 text-[9px] font-black tracking-widest uppercase text-amber-300"
-              style={{ textShadow: '0 0 8px rgba(255,180,0,0.8)', fontFamily: "'Nunito', sans-serif" }}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
+            <motion.div
+              style={isLeader ? { filter: 'drop-shadow(0 0 8px rgba(255,200,0,0.7))' } : {}}
+              animate={{ y: [0, -5, 0] }}
+              transition={{ duration: floatDuration, repeat: Infinity, ease: 'easeInOut', delay: floatDelay }}
             >
-              Leader
-            </motion.span>
-          )}
-        </AnimatePresence>
-      </div>
+              {SpriteCmp ? <SpriteCmp /> : (
+                <svg viewBox="0 0 64 96" width="64" height="96">
+                  <ellipse cx="32" cy="92" rx="18" ry="3.5" fill="rgba(0,0,0,0.22)"/>
+                  <circle cx="32" cy="55" r="28" fill="#888"/>
+                  <circle cx="32" cy="33" r="18" fill="#AAA"/>
+                </svg>
+              )}
+            </motion.div>
+          </div>
+
+          {/* Name tag */}
+          <p
+            className="mt-1.5 text-xs font-bold text-center text-white/90 leading-tight"
+            style={{
+              fontFamily: "'Nunito', sans-serif",
+              textShadow: '0 1px 4px rgba(0,0,0,0.9)',
+              maxWidth: 68,
+            }}
+          >
+            {heroData.name.split(' ')[0]}
+          </p>
+
+          {/* Leader tag */}
+          <AnimatePresence>
+            {isLeader && (
+              <motion.span
+                className="mt-0.5 text-[9px] font-black tracking-widest uppercase text-amber-300"
+                style={{ textShadow: '0 0 8px rgba(255,180,0,0.8)', fontFamily: "'Nunito', sans-serif" }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+              >
+                Leader
+              </motion.span>
+            )}
+          </AnimatePresence>
+        </div>
+      </motion.div>
 
       <AnimatePresence>
         {menu && (

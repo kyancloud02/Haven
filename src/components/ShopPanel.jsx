@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import shopItems from '../data/shopItems.json'
+import tiers from '../data/tiers.json'
 
 const BORDER    = '1px solid rgba(255,255,255,0.07)'
 const FONT_HEAD = "'Fredoka One', sans-serif"
@@ -179,6 +180,94 @@ function ItemRow({ item, canAfford, isHinted, justBought, onBuy }) {
   )
 }
 
+// ─── Home upgrade section ─────────────────────────────────────────────────────
+function HomeUpgradeSection({ gameState, updateState }) {
+  const currentIdx  = tiers.findIndex(t => t.name === gameState.housingTier)
+  const currentTier = tiers[currentIdx]
+  const nextTier    = tiers[currentIdx + 1] ?? null
+  const canAfford   = nextTier && currentTier && gameState.gold >= currentTier.upgradeCost
+
+  function handleUpgrade() {
+    if (!canAfford) return
+    updateState({ housingTier: nextTier.name, gold: gameState.gold - currentTier.upgradeCost })
+  }
+
+  if (!currentTier) return null
+
+  return (
+    <div className="mx-5 mb-3 rounded-xl p-4" style={{ background: 'rgba(255,255,255,0.04)', border: BORDER }}>
+      {/* Section label */}
+      <p style={{ fontFamily: FONT_BODY, color: 'rgba(255,255,255,0.28)', fontSize: '0.62rem',
+        letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 800, marginBottom: 8 }}>
+        Your Home
+      </p>
+
+      {/* Current tier */}
+      <div className="flex items-center gap-2">
+        <span style={{ fontSize: '1.15rem' }}>{currentTier.icon}</span>
+        <div>
+          <p style={{ fontFamily: FONT_HEAD, color: 'white', fontSize: '0.92rem', letterSpacing: '0.01em' }}>
+            {currentTier.name}
+          </p>
+          <p style={{ fontFamily: FONT_BODY, color: 'rgba(255,255,255,0.32)', fontSize: '0.68rem', marginTop: 1 }}>
+            {currentTier.description}
+          </p>
+        </div>
+      </div>
+
+      {/* Upgrade row */}
+      {nextTier ? (
+        <div className="flex items-center justify-between mt-3 pt-3"
+          style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+          <div>
+            <p style={{ fontFamily: FONT_BODY, color: 'rgba(255,255,255,0.28)', fontSize: '0.62rem',
+              letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: 2 }}>
+              Upgrade to
+            </p>
+            <div className="flex items-center gap-1.5">
+              <span style={{ fontSize: '1rem' }}>{nextTier.icon}</span>
+              <p style={{ fontFamily: FONT_HEAD, color: 'rgba(255,255,255,0.70)', fontSize: '0.84rem' }}>
+                {nextTier.name}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <span style={{ fontFamily: FONT_BODY, fontWeight: 700, fontSize: '0.85rem',
+              color: canAfford ? GOLD_COLOR : 'rgba(255,255,255,0.22)' }}>
+              {currentTier.upgradeCost}g
+            </span>
+            <motion.button
+              onClick={handleUpgrade}
+              disabled={!canAfford}
+              className="px-3 h-7 rounded-lg text-xs font-bold"
+              style={{
+                fontFamily: FONT_BODY,
+                background: canAfford ? 'rgba(255,255,255,0.14)' : 'rgba(255,255,255,0.04)',
+                color: canAfford ? 'rgba(255,255,255,0.88)' : 'rgba(255,255,255,0.20)',
+                border: '1px solid transparent',
+                cursor: canAfford ? 'pointer' : 'default',
+              }}
+              whileHover={canAfford ? { scale: 1.05 } : {}}
+              whileTap={canAfford ? { scale: 0.95 } : {}}
+              transition={{ type: 'spring', stiffness: 380, damping: 22 }}
+            >
+              Upgrade
+            </motion.button>
+          </div>
+        </div>
+      ) : (
+        <div className="mt-3 pt-3" style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+          <p style={{ fontFamily: FONT_BODY, color: `${GOLD_COLOR}80`, fontSize: '0.72rem',
+            textAlign: 'center', letterSpacing: '0.06em' }}>
+            ✦ Maximum tier reached
+          </p>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ─── Main panel ───────────────────────────────────────────────────────────────
 export default function ShopPanel({ onClose, gameState, updateState, activeReport }) {
   const [lastBought, setLastBought]   = useState(null) // item.id for flash
@@ -295,25 +384,37 @@ export default function ShopPanel({ onClose, gameState, updateState, activeRepor
       </AnimatePresence>
 
       {/* ── Items list ── */}
-      <div className="flex-1 overflow-y-auto px-5 pb-5 flex flex-col gap-2">
-        {shopItems.map(item => (
-          <ItemRow
-            key={item.id}
-            item={item}
-            canAfford={gameState.gold >= item.price}
-            isHinted={hintedItem?.id === item.id}
-            justBought={lastBought === item.id}
-            onBuy={handleBuy}
-          />
-        ))}
+      <div className="flex-1 overflow-y-auto pb-5 flex flex-col gap-2">
+        {/* Home upgrade card */}
+        <div className="pt-3">
+          <HomeUpgradeSection gameState={gameState} updateState={updateState} />
+        </div>
+
+        {/* Section divider */}
+        <div className="px-5 pb-1">
+          <p style={{ fontFamily: FONT_BODY, color: 'rgba(255,255,255,0.18)', fontSize: '0.62rem',
+            letterSpacing: '0.12em', textTransform: 'uppercase', fontWeight: 800 }}>
+            Supplies
+          </p>
+        </div>
+
+        <div className="px-5 flex flex-col gap-2">
+          {shopItems.map(item => (
+            <ItemRow
+              key={item.id}
+              item={item}
+              canAfford={gameState.gold >= item.price}
+              isHinted={hintedItem?.id === item.id}
+              justBought={lastBought === item.id}
+              onBuy={handleBuy}
+            />
+          ))}
+        </div>
       </div>
 
       {/* ── Blessing explainer (when active) ── */}
       {isBlessingLive && (
-        <div
-          className="px-5 py-3"
-          style={{ borderTop: BORDER }}
-        >
+        <div className="px-5 py-3" style={{ borderTop: BORDER }}>
           <p style={{ fontFamily: FONT_BODY, color: `${BLESS_COLOR}70`, fontSize: '0.68rem', lineHeight: 1.5, textAlign: 'center' }}>
             ✦ {gameState.blessing.characterName}'s wish was granted.
             {' '}Gold earnings are ×1.2 until tomorrow.

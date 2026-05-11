@@ -1,0 +1,37 @@
+[
+  {
+    "id": "cardboard_box",
+    "name": "Cardboard Box",
+    "icon": "📦",
+    "description": "Home is where you put it. Right now, it's cardboard.",
+    "upgradeCost": 40
+  },
+  {
+    "id": "weathered_tent",
+    "name": "Weathered Tent",
+    "icon": "⛺",
+    "description": "Keeps the rain out. Mostly. Wind negotiations ongoing.",
+    "upgradeCost": 100
+  },
+  {
+    "id": "wooden_hut",
+    "name": "Wooden Hut",
+    "icon": "🏚️",
+    "description": "Four walls and a fireplace. Genuine shelter at last.",
+    "upgradeCost": 250
+  },
+  {
+    "id": "stone_manor",
+    "name": "Stone Manor",
+    "icon": "🏰",
+    "description": "Cut stone, high ceilings, and walls that remember.",
+    "upgradeCost": 600
+  },
+  {
+    "id": "glass_castle",
+    "name": "Glass Castle",
+    "icon": "✨",
+    "description": "Light passes through every room. Impractically perfect.",
+    "upgradeCost": null
+  }
+]

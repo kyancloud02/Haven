@@ -9,6 +9,8 @@ const DEFAULT_STATE = {
     { id: 'base_hero', name: 'Base Hero' },
   ],
   currentLeaderId: 'king',
+  // null, or { expiresDate: 'YYYY-MM-DD', multiplier: 1.2, itemName, characterName }
+  blessing: null,
 }
 
 function loadState() {

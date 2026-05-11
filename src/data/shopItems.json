@@ -1,0 +1,42 @@
+[
+  {
+    "id": "rusty_scythe",
+    "name": "Rusty Scythe",
+    "price": 15,
+    "icon": "⚔️",
+    "description": "Clears overgrown paths. Better than nothing — barely.",
+    "matchKeywords": ["scythe", "blade", "cutting"]
+  },
+  {
+    "id": "warm_blanket",
+    "name": "Warm Blanket",
+    "price": 10,
+    "icon": "🧣",
+    "description": "For cold nights and weary travellers who gave theirs away.",
+    "matchKeywords": ["blanket", "cloak", "warm", "cold"]
+  },
+  {
+    "id": "honey_pot",
+    "name": "Honey Pot",
+    "price": 8,
+    "icon": "🍯",
+    "description": "A generously sized clay pot. Significantly larger than before.",
+    "matchKeywords": ["pot", "honey", "jar"]
+  },
+  {
+    "id": "leather_boots",
+    "name": "Leather Boots",
+    "price": 20,
+    "icon": "👢",
+    "description": "Sturdy soles for long patrols and roads with opinions.",
+    "matchKeywords": ["boots", "boot", "footwear", "horse"]
+  },
+  {
+    "id": "oil_lamp",
+    "name": "Oil Lamp",
+    "price": 12,
+    "icon": "🪔",
+    "description": "Keeps the darkness honest. Burns steady in the worst wind.",
+    "matchKeywords": ["torch", "torches", "lantern", "lamp", "light"]
+  }
+]

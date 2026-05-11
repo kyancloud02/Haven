@@ -1,6 +1,93 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { SPRITES } from './CharacterSprites'
+import { SPRITES, CHARACTER_ACCENT } from './CharacterSprites'
+import dialogue from '../data/dialogue.json'
+
+const BARK_DURATION = 5000
+
+// ─── Speech Bubble ────────────────────────────────────────────────────────────
+function SpeechBubble({ heroData, text, onDismiss }) {
+  const accent = CHARACTER_ACCENT[heroData.id] ?? '#ffffff'
+  const firstName = heroData.name.split(' ')[0]
+
+  return (
+    <motion.div
+      className="absolute left-1/2 pointer-events-auto"
+      style={{ bottom: 'calc(100% + 14px)', transform: 'translateX(-50%)', width: 200, zIndex: 40 }}
+      initial={{ opacity: 0, y: 6, scale: 0.92 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: 4, scale: 0.92 }}
+      transition={{ duration: 0.2 }}
+      onClick={onDismiss}
+    >
+      {/* Bubble body */}
+      <div
+        className="rounded-2xl px-3 pt-2 pb-2.5 cursor-pointer"
+        style={{
+          background: 'rgba(12,10,8,0.92)',
+          backdropFilter: 'blur(12px)',
+          border: `1px solid ${accent}40`,
+          boxShadow: `0 4px 20px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.04)`,
+        }}
+      >
+        {/* Character name pill */}
+        <span
+          className="inline-block rounded-full px-2 py-0.5 mb-1.5 text-[10px] font-black tracking-wide uppercase"
+          style={{
+            background: `${accent}22`,
+            color: accent,
+            fontFamily: "'Nunito', sans-serif",
+            border: `1px solid ${accent}40`,
+          }}
+        >
+          {firstName}
+        </span>
+
+        {/* Bark text */}
+        <p
+          style={{
+            fontFamily: "'Nunito', sans-serif",
+            fontSize: '0.75rem',
+            color: 'rgba(255,255,255,0.88)',
+            lineHeight: 1.45,
+            fontStyle: 'italic',
+          }}
+        >
+          "{text}"
+        </p>
+
+        {/* Drain bar */}
+        <div
+          className="mt-2 rounded-full overflow-hidden"
+          style={{ height: 2, background: 'rgba(255,255,255,0.08)' }}
+        >
+          <motion.div
+            className="h-full rounded-full"
+            style={{ background: accent, transformOrigin: 'left' }}
+            initial={{ scaleX: 1 }}
+            animate={{ scaleX: 0 }}
+            transition={{ duration: BARK_DURATION / 1000, ease: 'linear' }}
+          />
+        </div>
+      </div>
+
+      {/* Triangle tail */}
+      <div
+        style={{
+          position: 'absolute',
+          bottom: -7,
+          left: '50%',
+          transform: 'translateX(-50%)',
+          width: 0,
+          height: 0,
+          borderLeft: '7px solid transparent',
+          borderRight: '7px solid transparent',
+          borderTop: `8px solid rgba(12,10,8,0.92)`,
+        }}
+      />
+    </motion.div>
+  )
+}
 
 // ─── Crown ────────────────────────────────────────────────────────────────────
 function Crown() {
@@ -80,10 +167,31 @@ function ContextMenu({ x, y, heroName, isLeader, onCoronate, onClose }) {
 
 
 // ─── CharacterSprite ──────────────────────────────────────────────────────────
-export default function CharacterSprite({ heroData, gameState, updateState, spriteIndex = 0 }) {
-  const [menu, setMenu] = useState(null)
+export default function CharacterSprite({ heroData, gameState, updateState, spriteIndex = 0, timeState = 'AWAY' }) {
+  const [menu, setMenu]   = useState(null)
+  const [bark, setBark]   = useState(null)
+  const barkTimer         = useRef(null)
   const isLeader = gameState.currentLeaderId === heroData.id
   const SpriteCmp = SPRITES[heroData.id]
+
+  // Clean up bark timer on unmount
+  useEffect(() => () => clearTimeout(barkTimer.current), [])
+
+  const handleClick = useCallback(() => {
+    // Dismiss if already showing
+    if (bark) {
+      clearTimeout(barkTimer.current)
+      setBark(null)
+      return
+    }
+
+    const pool = dialogue[heroData.id]?.[timeState]
+    if (!pool || pool.length === 0) return
+
+    const text = pool[Math.floor(Math.random() * pool.length)]
+    setBark(text)
+    barkTimer.current = setTimeout(() => setBark(null), BARK_DURATION)
+  }, [bark, heroData.id, timeState])
 
   const handleContextMenu = useCallback((e) => {
     e.preventDefault()
@@ -110,15 +218,29 @@ export default function CharacterSprite({ heroData, gameState, updateState, spri
           {isLeader && <Crown key="crown" />}
         </AnimatePresence>
 
-        <motion.div
-          className="cursor-pointer"
-          style={isLeader ? { filter: 'drop-shadow(0 0 8px rgba(255,200,0,0.7))' } : {}}
-          animate={{ y: [0, -5, 0] }}
-          transition={{ duration: floatDuration, repeat: Infinity, ease: 'easeInOut', delay: floatDelay }}
-          whileHover={{ scale: 1.1, y: -8 }}
-          whileTap={{ scale: 0.93 }}
-          onContextMenu={handleContextMenu}
-        >
+        {/* Speech bubble anchored above the floating sprite */}
+        <div className="relative">
+          <AnimatePresence>
+            {bark && (
+              <SpeechBubble
+                key="bubble"
+                heroData={heroData}
+                text={bark}
+                onDismiss={() => { clearTimeout(barkTimer.current); setBark(null) }}
+              />
+            )}
+          </AnimatePresence>
+
+          <motion.div
+            className="cursor-pointer"
+            style={isLeader ? { filter: 'drop-shadow(0 0 8px rgba(255,200,0,0.7))' } : {}}
+            animate={{ y: [0, -5, 0] }}
+            transition={{ duration: floatDuration, repeat: Infinity, ease: 'easeInOut', delay: floatDelay }}
+            whileHover={{ scale: 1.1, y: -8 }}
+            whileTap={{ scale: 0.93 }}
+            onClick={handleClick}
+            onContextMenu={handleContextMenu}
+          >
           {SpriteCmp ? <SpriteCmp /> : (
             <svg viewBox="0 0 64 96" width="64" height="96">
               <ellipse cx="32" cy="92" rx="18" ry="3.5" fill="rgba(0,0,0,0.22)"/>
@@ -126,7 +248,8 @@ export default function CharacterSprite({ heroData, gameState, updateState, spri
               <circle cx="32" cy="33" r="18" fill="#AAA"/>
             </svg>
           )}
-        </motion.div>
+          </motion.div>
+        </div>
 
         {/* Name tag */}
         <p

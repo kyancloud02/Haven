@@ -1,0 +1,104 @@
+{
+  "elf_princess": {
+    "AWAY": [
+      "The wind carries three distinct messages today. I'm still translating the second.",
+      "A crow has been following me since dawn. It knows something I don't. Yet.",
+      "The light falls differently on the eastern meadow this morning. Something shifted overnight."
+    ],
+    "HOME": [
+      "I've been analyzing the soil patterns of this kingdom... fascinating.",
+      "The trees are quieter at dusk. Even they need rest, I suppose.",
+      "That star just blinked at me. I don't think stars are supposed to do that."
+    ],
+    "SLEEP": [
+      "The constellations are misaligned tonight by two degrees. Someone should be concerned.",
+      "I heard the forest speak three words at midnight. I won't repeat them until I understand them.",
+      "Sleep does not come easily when the world is full of things left unsolved."
+    ]
+  },
+  "warrior_mulan": {
+    "AWAY": [
+      "The south perimeter has been checked. Twice. I felt it needed checking twice.",
+      "I run the patrol route in fourteen minutes now. Last week it was sixteen.",
+      "Discipline isn't punishment. It's what keeps everyone safe when things go wrong."
+    ],
+    "HOME": [
+      "Report: perimeter secure. Grass situation: critical. Scythe situation: still broken.",
+      "You fight better when you're rested. I remind myself of this. It doesn't always help.",
+      "Forty-three stars visible before the clouds moved in. I counted. It was a productive exercise."
+    ],
+    "SLEEP": [
+      "I don't sleep much. There's always something that needs watching.",
+      "Night patrol has its own rhythm. You learn to read the silence.",
+      "The others sleep soundly. That's the point. That's exactly why I'm still awake."
+    ]
+  },
+  "sun_wukong": {
+    "AWAY": [
+      "I could leap to that mountaintop and back before you finish that sentence. Watch.",
+      "The clouds are particularly cooperative today. I've had three of them do tricks.",
+      "I once outran lightning. It was close, but I definitely won. Definitely."
+    ],
+    "HOME": [
+      "Another kingdom surveyed. Another day they never saw me coming.",
+      "Seventeen new moves invented today. Tomorrow I'll invent seventeen more.",
+      "The sunset looks best from up high. I take partial credit for the angle."
+    ],
+    "SLEEP": [
+      "I don't sleep. I enter a strategic period of horizontal thinking.",
+      "Night is when the interesting things happen. I've seen things you wouldn't believe.",
+      "The stars are just watching me. Honestly? Fair enough."
+    ]
+  },
+  "sherlock_holmes": {
+    "AWAY": [
+      "I've been analyzing the soil composition on the eastern path. The results are deeply inconsistent.",
+      "Fourteen irregularities in the morning logs. Thirteen have explanations. The fourteenth does not. Yet.",
+      "Every detail is data. Every silence is a clue. Every clue is a story. I am excellent at stories."
+    ],
+    "HOME": [
+      "The evening light reveals details the day conceals. I have come to prefer evenings considerably.",
+      "Three anomalies today. I've resolved two. The third is keeping me company.",
+      "I've been analyzing the soil patterns of this kingdom... fascinating."
+    ],
+    "SLEEP": [
+      "I find sleep difficult when a theory remains unfinished. This happens quite often.",
+      "Darkness is simply a different set of data. One adapts.",
+      "Someone moved the stone by the well between yesterday and today. I measured. I will find out why."
+    ]
+  },
+  "robin_hood": {
+    "AWAY": [
+      "Left half the surplus grain at the edge of the outer settlement. Nobody saw. Perfect.",
+      "The forest route is slower, but considerably more scenic. Worth it every time.",
+      "I don't steal. I correct imbalances. There's a difference. Several, actually."
+    ],
+    "HOME": [
+      "A productive day. The ledger of fairness is slightly more balanced than this morning.",
+      "I gave away my last arrow this afternoon. Completely worth it. No regrets.",
+      "People underestimate how much good can be done before breakfast. I take full advantage."
+    ],
+    "SLEEP": [
+      "The best redistributions happen after dark. Fewer witnesses. More gratitude.",
+      "I'm not sneaking out. I'm conducting quiet diplomacy with the night.",
+      "The stars don't judge. I appreciate that about them more than I can say."
+    ]
+  },
+  "winnie_the_pooh": {
+    "AWAY": [
+      "I was going to do something quite important today. I've forgotten what. I'm sure it'll come back.",
+      "Found a patch of clover that smelled exactly like contentment. I sat there for a good while.",
+      "The bees near the south meadow seem friendlier today. Or perhaps I'm simply friendlier."
+    ],
+    "HOME": [
+      "Is it time for a little something? A snack, perhaps?",
+      "I think I deserve a second helping of whatever this evening has to offer.",
+      "The day went quite well, I think. I am ready to eat about it."
+    ],
+    "SLEEP": [
+      "I dreamed of honey. And then of more honey. And then I was awake and it was very sad.",
+      "Nights are good for quiet thinking. I mostly think about what I'll eat in the morning.",
+      "Sleep comes easily when you've had a good snack and a good think. I recommend both highly."
+    ]
+  }
+}

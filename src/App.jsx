@@ -7,6 +7,7 @@ import ShopPanel from './components/ShopPanel'
 import MailboxPanel from './components/MailboxPanel'
 import { useGameState } from './hooks/useGameState'
 import { useDailyReport } from './hooks/useDailyReport'
+import { getTimeState } from './hooks/useGameTime'
 import characters from './data/characters.json'
 
 const IS_DEV = import.meta.env.DEV
@@ -96,6 +97,8 @@ export default function App() {
     gameState.currentLeaderId,
     IS_DEV ? debugHour : undefined,
   )
+
+  const effectiveTimeState = getTimeState(IS_DEV ? debugHour : new Date().getHours())
 
   function closeAll() {
     setShopOpen(false)
@@ -211,6 +214,7 @@ export default function App() {
               gameState={gameState}
               updateState={updateState}
               spriteIndex={i}
+              timeState={effectiveTimeState}
             />
           ))}
         </div>

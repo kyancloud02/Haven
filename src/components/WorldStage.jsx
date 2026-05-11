@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { useGameTime } from '../hooks/useGameTime'
+import { useGameTime, getTimeState } from '../hooks/useGameTime'
 
 // ─── Per-state palettes ────────────────────────────────────────────────────────
 const THEMES = {
@@ -22,6 +22,7 @@ const THEMES = {
     boxGlow:      0,
     ambientFill:  '#FFE8A0',
     ambientOpacity: 0.10,
+    mistOpacity:  0.06,
     label:        'Away · Daytime',
     labelFill:    '#4A8060',
   },
@@ -44,6 +45,7 @@ const THEMES = {
     boxGlow:      1,
     ambientFill:  '#FF8020',
     ambientOpacity: 0.13,
+    mistOpacity:  0.10,
     label:        'Home · Evening',
     labelFill:    '#C07040',
   },
@@ -66,6 +68,7 @@ const THEMES = {
     boxGlow:      0,
     ambientFill:  '#100838',
     ambientOpacity: 0.32,
+    mistOpacity:  0.14,
     label:        'Sleep · Night',
     labelFill:    '#8890CC',
   },
@@ -93,18 +96,22 @@ const CLOUDS = [
   { x:650, y:94,  s:0.82, spd:22 },
 ]
 
+const MIST = [
+  { cx: 180, cy: 298, rx: 310, ry: 30, spd: 38, delay: 0   },
+  { cx: 620, cy: 318, rx: 260, ry: 24, spd: 52, delay: 5   },
+  { cx: 400, cy: 340, rx: 220, ry: 20, spd: 32, delay: 11  },
+]
+
 const EASE = { duration: 2.5, ease: 'easeInOut' }
 
 // ─── Component ─────────────────────────────────────────────────────────────────
-export default function WorldStage() {
-  const timeState = useGameTime()
+export default function WorldStage({ overrideHour }) {
+  const realTimeState = useGameTime()
+  const timeState = overrideHour !== undefined ? getTimeState(overrideHour) : realTimeState
   const T = THEMES[timeState]
 
   return (
-    <div
-      className="relative w-full overflow-hidden rounded-3xl shadow-2xl"
-      style={{ height: 420 }}
-    >
+    <div className="absolute inset-0 overflow-hidden">
       {/* Sky gradient — three layers crossfaded by opacity */}
       {Object.entries(THEMES).map(([state, th]) => (
         <motion.div
@@ -119,6 +126,7 @@ export default function WorldStage() {
       {/* SVG scene */}
       <svg
         viewBox="0 0 800 420"
+        preserveAspectRatio="xMidYMid slice"
         className="absolute inset-0 w-full h-full"
         xmlns="http://www.w3.org/2000/svg"
       >
@@ -181,7 +189,6 @@ export default function WorldStage() {
 
         {/* ── Setting sun on horizon (HOME) ── */}
         <motion.g animate={{ opacity: timeState === 'HOME' ? 1 : 0 }} transition={EASE}>
-          {/* Horizon horizon-warmth bleed */}
           <ellipse cx={65} cy={340} rx={160} ry={55} fill="#FF6820" opacity={0.28} filter="url(#sun-glow)" />
           <circle cx={65} cy={355} r={70} fill="#FF7030" opacity={0.90} />
         </motion.g>
@@ -205,7 +212,6 @@ export default function WorldStage() {
             <ellipse cx={c.x}           cy={c.y}          rx={50*c.s} ry={22*c.s} fill="white" opacity={0.90} />
             <ellipse cx={c.x-23*c.s}   cy={c.y+ 4*c.s}  rx={28*c.s} ry={18*c.s} fill="white" opacity={0.90} />
             <ellipse cx={c.x+25*c.s}   cy={c.y+ 3*c.s}  rx={33*c.s} ry={19*c.s} fill="white" opacity={0.90} />
-            {/* Soft shadow belly */}
             <ellipse cx={c.x+ 2*c.s}   cy={c.y+15*c.s}  rx={46*c.s} ry={ 9*c.s} fill="#C0D8EC" opacity={0.28} />
           </motion.g>
         ))}
@@ -236,19 +242,16 @@ export default function WorldStage() {
             d="M97,378 C95,320 91,278 89,238 C94,236 102,235 110,237 C109,278 111,320 113,378 Z"
             animate={{ fill: T.trunk }} transition={EASE}
           />
-          {/* Shadow lobe */}
           <motion.path
             filter="url(#wc)"
             d="M42,218 C38,250 56,274 86,280 C118,286 153,272 167,244 C148,266 120,280 88,276 C58,270 42,242 42,218 Z"
             animate={{ fill: T.canopy1s }} transition={EASE}
           />
-          {/* Main canopy */}
           <motion.path
             filter="url(#wc)"
             d="M103,104 C58,100 23,137 21,178 C19,220 48,254 89,263 C130,271 167,253 180,218 C192,184 175,143 148,123 C128,108 110,104 103,104 Z"
             animate={{ fill: T.canopy1 }} transition={EASE}
           />
-          {/* Highlight lobe (upper-left catch-light) */}
           <motion.path
             filter="url(#wc)"
             d="M103,104 C77,99 50,116 40,140 C34,158 40,179 53,193 C63,162 80,138 106,123 C124,112 103,104 103,104 Z"
@@ -286,6 +289,25 @@ export default function WorldStage() {
           transition={EASE}
         />
 
+        {/* ── Atmospheric mist (Islets-style layered fog) ── */}
+        {MIST.map((m, i) => (
+          <motion.g
+            key={`mist${i}`}
+            animate={{
+              opacity: [m.delay % 3 === 0 ? T.mistOpacity : T.mistOpacity * 0.7, T.mistOpacity * 1.4, T.mistOpacity * 0.6, T.mistOpacity],
+              x: [0, m.spd, 0, -m.spd * 0.4, 0],
+            }}
+            transition={{
+              duration: 22 + i * 8,
+              repeat: Infinity,
+              ease: 'easeInOut',
+              delay: m.delay,
+            }}
+          >
+            <ellipse cx={m.cx} cy={m.cy} rx={m.rx} ry={m.ry} fill="white" />
+          </motion.g>
+        ))}
+
         {/* ── Warm glow pool around box (HOME) ── */}
         <motion.ellipse
           cx={400} cy={364} rx={90} ry={60}
@@ -295,75 +317,51 @@ export default function WorldStage() {
         />
 
         {/* ════════ Cardboard Box ════════ */}
-        {/* Drop shadow */}
         <ellipse cx={401} cy={381} rx={74} ry={8} fill="rgba(0,0,0,0.16)" />
-
-        {/* Body */}
         <path
           d="M333,374 C335,373 339,373 342,373 L458,373 C461,373 465,373 467,374
              L466,270 C463,268 458,266 454,266 L346,266 C342,266 337,268 334,270 Z"
           fill="#C4914A"
         />
-        {/* Right shadow strip — depth illusion */}
         <path
           d="M442,266 L458,266 C462,266 466,268 467,270 L466,374 L442,374 Z"
           fill="#A07A35" opacity={0.55}
         />
-        {/* Worn patch highlight */}
         <path
           d="M354,292 C360,285 390,282 396,290 C402,298 397,312 388,314 C373,316 350,304 354,292 Z"
           fill="#D4A460" opacity={0.62}
         />
-        {/* Centre crease */}
         <path d="M400,266 L400,374" stroke="#7A5020" strokeWidth="1.5" opacity={0.42} fill="none" />
-        {/* Horizontal stress crease */}
         <path d="M333,318 L467,318" stroke="#7A5020" strokeWidth="1"   opacity={0.28} fill="none" />
-
-        {/* Top-left flap */}
         <path d="M334,270 C331,266 329,256 331,246 L366,238 L369,266 Z" fill="#BA8840" />
         <path d="M334,270 C331,266 329,256 331,246 L366,238 L369,266 Z"
           fill="none" stroke="#7A5020" strokeWidth="1" opacity={0.42} />
-
-        {/* Top-right flap */}
         <path d="M466,270 C469,266 471,256 469,246 L434,238 L431,266 Z" fill="#BA8840" />
         <path d="M466,270 C469,266 471,256 469,246 L434,238 L431,266 Z"
           fill="none" stroke="#7A5020" strokeWidth="1" opacity={0.42} />
-
-        {/* Top-centre flap (slightly propped open — charming) */}
         <path d="M369,266 C368,258 370,247 372,242 L400,234 L428,242 C430,247 432,258 431,266 Z"
           fill="#C49848" />
         <path d="M369,266 C368,258 370,247 372,242 L400,234 L428,242 C430,247 432,258 431,266 Z"
           fill="none" stroke="#7A5020" strokeWidth="1" opacity={0.42} />
-
-        {/* Horizontal tape strip */}
         <rect x="350" y="312" width="100" height="7" rx="2"
           fill="#ECD8A0" opacity={0.88} transform="rotate(-0.8 400 316)" />
-        {/* Vertical tape strip */}
         <rect x="397" y="266" width="7" height="108" rx="2" fill="#ECD8A0" opacity={0.82} />
-
-        {/* Door arch */}
         <path d="M369,374 L369,338 C369,322 431,322 431,338 L431,374 Z" fill="#9A6A2A" />
-
-        {/* Soft outline — warm brown, not black */}
         <path
           d="M333,374 C335,373 339,373 342,373 L458,373 C461,373 465,373 467,374
              L466,270 C463,268 458,266 454,266 L346,266 C342,266 337,268 334,270 Z"
           fill="none" stroke="#7A5020" strokeWidth="1.5" opacity={0.52}
         />
-
-        {/* Warm interior glow through door (HOME) */}
         <motion.path
           d="M369,374 L369,338 C369,322 431,322 431,338 L431,374 Z"
           fill="#FFB040"
           animate={{ opacity: T.boxGlow * 0.92 }}
           transition={EASE}
         />
-        {/* Light leaking through left seam */}
         <motion.line x1="334" y1="342" x2="334" y2="328"
           stroke="#FFB848" strokeWidth="2.5"
           animate={{ opacity: T.boxGlow * 0.60 }} transition={EASE}
         />
-        {/* Light leaking through right seam */}
         <motion.line x1="466" y1="336" x2="466" y2="322"
           stroke="#FFB040" strokeWidth="2"
           animate={{ opacity: T.boxGlow * 0.48 }} transition={EASE}
@@ -431,8 +429,8 @@ export default function WorldStage() {
 
       {/* ── Breathing vignette — the whole scene "inhales" slowly ── */}
       <motion.div
-        className="absolute inset-0 rounded-3xl pointer-events-none"
-        style={{ boxShadow: 'inset 0 0 90px rgba(0,0,0,0.28)' }}
+        className="absolute inset-0 pointer-events-none"
+        style={{ boxShadow: 'inset 0 0 120px rgba(0,0,0,0.55)' }}
         animate={{ opacity: [0.7, 1, 0.7] }}
         transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut' }}
       />

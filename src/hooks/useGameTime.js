@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 
-function getTimeState(hour) {
+export function getTimeState(hour) {
   if (hour >= 8 && hour < 18) return 'AWAY'
   if (hour >= 18 && hour < 22) return 'HOME'
   return 'SLEEP'

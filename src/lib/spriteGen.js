@@ -261,6 +261,31 @@ function ovalO(ctx, cx, cy, rx, ry, fill) {
   oval(ctx, cx, cy, rx + 1.5, ry + 1.5, OL); oval(ctx, cx, cy, rx, ry, fill)
 }
 
+// Expressive eye: large white sclera + dark pupil + gleam, clean stroke outline
+function drawEye(ctx, cx, cy, r, pupilColor) {
+  ctx.save()
+  ctx.fillStyle   = '#FFFFFF'
+  ctx.strokeStyle = OL
+  ctx.lineWidth   = 1.5
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2)
+  ctx.fill(); ctx.stroke()
+  // Pupil sits just below centre
+  ctx.fillStyle = pupilColor
+  ctx.beginPath(); ctx.arc(cx, cy + r * 0.12, r * 0.56, 0, Math.PI * 2); ctx.fill()
+  // Gleam (upper-left)
+  ctx.fillStyle = 'rgba(255,255,255,0.92)'
+  ctx.beginPath(); ctx.arc(cx - r * 0.28, cy - r * 0.28, r * 0.22, 0, Math.PI * 2); ctx.fill()
+  ctx.restore()
+}
+
+// Blink eye — flat lid arc
+function drawEyeBlink(ctx, cx, cy, r) {
+  ctx.save()
+  ctx.strokeStyle = OL; ctx.lineWidth = 2; ctx.lineCap = 'round'
+  ctx.beginPath(); ctx.arc(cx, cy, r, Math.PI * 1.1, Math.PI * 1.9); ctx.stroke()
+  ctx.restore()
+}
+
 function rrectO(ctx, x, y, w, h, r, fill) {
   rrect(ctx, x - 1.5, y - 1.5, w + 3, h + 3, r + 1, OL)
   rrect(ctx, x, y, w, h, r, fill)
@@ -625,37 +650,30 @@ function drawHead(ctx, char, cx, y, view, blinking) {
   circ(ctx, hx - (isSide ? dir * 3 : 4), y + 12, 5, '#FFFFFF')
   ctx.globalAlpha = 1.0
 
-  // ── Eyes ────────────────────────────────────────────────────────────────────
+  // ── Eyes — positioned in upper third of head ────────────────────────────────
+  const eyeY = y + 14   // higher up = more expressive
+  const eyeR = 6        // larger = more googly / reference-accurate
   if (!blinking) {
     if (!isSide) {
-      circO(ctx, hx - 5, y + 16, 5.5, '#FFFFFF')
-      circ(ctx,  hx - 5, y + 16, 3.5, char.eyes)
-      circ(ctx,  hx - 4, y + 15,   1, '#FFFFFF')
-      circO(ctx, hx + 5, y + 16, 5.5, '#FFFFFF')
-      circ(ctx,  hx + 5, y + 16, 3.5, char.eyes)
-      circ(ctx,  hx + 6, y + 15,   1, '#FFFFFF')
+      drawEye(ctx, hx - 6, eyeY, eyeR, char.eyes)
+      drawEye(ctx, hx + 6, eyeY, eyeR, char.eyes)
     } else {
-      const ex = hx - dir * 3
-      circO(ctx, ex, y + 16, 5.5, '#FFFFFF')
-      circ(ctx,  ex, y + 16, 3.5, char.eyes)
-      circ(ctx,  ex - dir, y + 15, 1, '#FFFFFF')
+      drawEye(ctx, hx - dir * 3, eyeY, eyeR, char.eyes)
     }
   } else {
-    ctx.strokeStyle = OL; ctx.lineWidth = 2; ctx.lineCap = 'round'
     if (!isSide) {
-      ctx.beginPath(); ctx.moveTo(hx - 9, y + 16); ctx.lineTo(hx - 2, y + 16); ctx.stroke()
-      ctx.beginPath(); ctx.moveTo(hx + 2, y + 16); ctx.lineTo(hx + 9, y + 16); ctx.stroke()
+      drawEyeBlink(ctx, hx - 6, eyeY, eyeR)
+      drawEyeBlink(ctx, hx + 6, eyeY, eyeR)
     } else {
-      const ex = hx - dir * 3
-      ctx.beginPath(); ctx.moveTo(ex - 4, y + 16); ctx.lineTo(ex + 4, y + 16); ctx.stroke()
+      drawEyeBlink(ctx, hx - dir * 3, eyeY, eyeR)
     }
   }
 
-  // ── Cheek blush ─────────────────────────────────────────────────────────────
-  ctx.globalAlpha = 0.16
+  // ── Cheek blush — sits below the eyes ────────────────────────────────────────
+  ctx.globalAlpha = 0.18
   if (!isSide) {
-    oval(ctx, hx - 9, y + 20, 4, 2.5, '#FF8898')
-    oval(ctx, hx + 9, y + 20, 4, 2.5, '#FF8898')
+    oval(ctx, hx - 10, y + 19, 4.5, 2.5, '#FF8898')
+    oval(ctx, hx + 10, y + 19, 4.5, 2.5, '#FF8898')
   }
   ctx.globalAlpha = 1.0
 
@@ -742,19 +760,26 @@ function drawHead(ctx, char, cx, y, view, blinking) {
 // ── Legs & feet ────────────────────────────────────────────────────────────────
 
 function drawLegs(ctx, char, cx, oy, lL, lR, side) {
-  const lx = side ? cx - 5 : cx - 6
-  const rx = side ? cx + 5 : cx + 6
-  // Outlines
-  oval(ctx, lx, oy + 51 + lL, 4.5, 5.5, OL)
-  oval(ctx, rx, oy + 51 + lR, 4.5, 5.5, OL)
-  // Fill
-  oval(ctx, lx, oy + 51 + lL, 3.5, 4.5, char.feet)
-  oval(ctx, rx, oy + 51 + lR, 3.5, 4.5, char.feet)
-  // Feet
-  oval(ctx, lx - 1, oy + 58, 5.5, 2.8, OL)
-  oval(ctx, rx + 1, oy + 58, 5.5, 2.8, OL)
-  oval(ctx, lx - 1, oy + 58, 4.5, 2,   char.feetD)
-  oval(ctx, rx + 1, oy + 58, 4.5, 2,   char.feetD)
+  const lx  = side ? cx - 5 : cx - 6
+  const rx  = side ? cx + 5 : cx + 6
+  const legR = 3.5   // round legs — equal rx/ry for a soft blob look
+
+  ctx.strokeStyle = OL; ctx.lineWidth = 1.2
+
+  // Left leg
+  ctx.fillStyle = char.feet
+  ctx.beginPath(); ctx.ellipse(lx, oy + 51 + lL, legR, legR + 1, 0, 0, Math.PI * 2)
+  ctx.fill(); ctx.stroke()
+  // Right leg
+  ctx.beginPath(); ctx.ellipse(rx, oy + 51 + lR, legR, legR + 1, 0, 0, Math.PI * 2)
+  ctx.fill(); ctx.stroke()
+
+  // Feet — small flat ovals, slightly forward of each leg
+  ctx.fillStyle = char.feetD
+  ctx.beginPath(); ctx.ellipse(lx - 1, oy + 57, 5, 2.2, 0, 0, Math.PI * 2)
+  ctx.fill(); ctx.stroke()
+  ctx.beginPath(); ctx.ellipse(rx + 1, oy + 57, 5, 2.2, 0, 0, Math.PI * 2)
+  ctx.fill(); ctx.stroke()
 }
 
 // ── Satchel (character-specific) ──────────────────────────────────────────────
@@ -912,7 +937,7 @@ export function generateSpriteSheet(charId) {
   return canvas.toDataURL('image/png')
 }
 
-const CACHE_VERSION = 'v5'
+const CACHE_VERSION = 'v6'
 
 export function getCachedSprite(charId) {
   try { return localStorage.getItem(`haven_sprite_${CACHE_VERSION}_${charId}`) }

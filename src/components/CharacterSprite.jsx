@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence, useMotionValue, animate } from 'framer-motion'
-import { SPRITES, CHARACTER_ACCENT } from './CharacterSprites'
+import { CHARACTER_ACCENT } from './CharacterSprites'
+import SpriteCanvas from './SpriteCanvas'
 import dialogue from '../data/dialogue.json'
 
 const BARK_DURATION = 5000
@@ -216,18 +217,34 @@ export default function CharacterSprite({
   const [menu, setMenu]         = useState(null)
   const [bark, setBark]         = useState(null)
   const [dragging, setDragging] = useState(false)
+  const [dragVel, setDragVel]   = useState({ x: 0, y: 0 })
   const barkTimer  = useRef(null)
   const isDragging = useRef(false)
   const isLeader   = gameState.currentLeaderId === heroData.id
   const isGuard    = gameState.guardId === heroData.id
   const canBeGuard = heroData.permittedRoles?.includes('Guard') ?? false
-  const SpriteCmp  = SPRITES[heroData.id]
 
   // Separate motion values so x persists after drop while y springs back
   const dragX = useMotionValue(0)
   const dragY = useMotionValue(0)
 
   useEffect(() => () => clearTimeout(barkTimer.current), [])
+
+  // Map current state to sprite animation key
+  function getAnimation() {
+    if (bark) return 'talk'
+    if (dragging) {
+      const speed = Math.sqrt(dragVel.x ** 2 + dragVel.y ** 2)
+      if (speed > 30) {
+        if (Math.abs(dragVel.x) > Math.abs(dragVel.y)) {
+          return dragVel.x > 0 ? 'walk_right' : 'walk_left'
+        }
+        return dragVel.y > 0 ? 'walk_down' : 'walk_up'
+      }
+    }
+    if (isGuard) return 'walk_left'   // guard faces left toward Haven center
+    return 'idle'
+  }
 
   // Left-click: bark (only when not dragging)
   const handleClick = useCallback(() => {
@@ -263,9 +280,6 @@ export default function CharacterSprite({
   const spread      = totalCharacters > 1 ? 84 / (totalCharacters - 1) : 0
   const leftPercent = 8 + spriteIndex * spread  // 8% – 92%
 
-  const floatDuration = 2.8 + spriteIndex * 0.38
-  const floatDelay    = spriteIndex * 0.52
-
   return (
     <>
       <motion.div
@@ -291,10 +305,11 @@ export default function CharacterSprite({
           isDragging.current = true
           setDragging(true)
         }}
+        onDrag={(_, info) => setDragVel({ x: info.velocity.x, y: info.velocity.y })}
         onDragEnd={() => {
           setTimeout(() => { isDragging.current = false }, 80)
           setDragging(false)
-          // Spring Y back to ground; X stays where they dropped
+          setDragVel({ x: 0, y: 0 })
           animate(dragY, 0, { type: 'spring', stiffness: 380, damping: 28 })
         }}
         onClick={handleClick}
@@ -319,29 +334,19 @@ export default function CharacterSprite({
               )}
             </AnimatePresence>
 
-            <motion.div
+            <div
               style={
-                isLeader ? { filter: 'drop-shadow(0 0 8px rgba(255,200,0,0.7))' }
-                : isGuard ? { filter: 'drop-shadow(0 0 10px rgba(58,112,216,0.75))' }
+                isLeader ? { filter: 'drop-shadow(0 0 10px rgba(255,200,0,0.8))' }
+                : isGuard ? { filter: 'drop-shadow(0 0 12px rgba(58,112,216,0.85))' }
                 : {}
               }
-              animate={isGuard
-                ? { rotate: [-2, 2, -2] }
-                : { y: [0, -5, 0] }
-              }
-              transition={isGuard
-                ? { duration: 1.8, repeat: Infinity, ease: 'easeInOut' }
-                : { duration: floatDuration, repeat: Infinity, ease: 'easeInOut', delay: floatDelay }
-              }
             >
-              {SpriteCmp ? <SpriteCmp /> : (
-                <svg viewBox="0 0 64 96" width="64" height="96">
-                  <ellipse cx="32" cy="92" rx="18" ry="3.5" fill="rgba(0,0,0,0.22)"/>
-                  <circle cx="32" cy="55" r="28" fill="#888"/>
-                  <circle cx="32" cy="33" r="18" fill="#AAA"/>
-                </svg>
-              )}
-            </motion.div>
+              <SpriteCanvas
+                characterId={heroData.id}
+                animation={getAnimation()}
+                scale={2}
+              />
+            </div>
           </div>
 
           {/* Name tag */}

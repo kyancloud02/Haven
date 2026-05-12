@@ -29,8 +29,47 @@ export const ANIM_META = {
   blink:      { row: 6, frames: 2, fps: 3  },
 }
 
-// ── Character definitions ──────────────────────────────────────────────────────
-// Each entry defines colours + which outfit/head drawing functions to use.
+// ── Character definition schema ───────────────────────────────────────────────
+//
+// To add a new character, call registerCharacter(id, def) anywhere before
+// generateSpriteSheet is first called for that id.
+//
+// Required fields:
+//   body / bodyD      — creature body fill + shadow colour
+//   head / headD      — head fill + shadow colour
+//   eyes              — pupil colour
+//   ears              — ear fill colour
+//   outfit / outfitD  — primary clothing colour + shadow
+//   trim              — accent / decoration colour (gold, leather, etc.)
+//   belt              — belt colour, or null for none
+//   feet / feetD      — leg/foot fill + shadow colour
+//   special           — head accessory (see SPECIALS below)
+//   style             — outfit silhouette (see STYLES below)
+//
+// Optional:
+//   plump: true       — widens body ovals (e.g. Winnie-the-Pooh)
+//
+// Available style values:
+export const STYLES = /** @type {const} */ ([
+  'dress',          // bell-shaped flowing skirt (Elf Princess)
+  'armour',         // chest-plate + pauldrons (Mulan)
+  'battle_robe',    // round robe + sash belt (Sun Wukong)
+  'detective_coat', // long lapelled coat + waistcoat (Sherlock)
+  'hooded_tunic',   // tunic + belt + back quiver (Robin Hood)
+  'red_shirt',      // short crop-shirt, belly visible (Winnie-the-Pooh)
+])
+
+// Available special (head accessory) values:
+export const SPECIALS = /** @type {const} */ ([
+  'elf_crown',       // gold zigzag crown + pointed elf ears
+  'topknot',         // dark hair bun + hair pin
+  'golden_headband', // gold band across forehead + coloured jewel
+  'deerstalker',     // flat detective cap with peaks
+  'green_hood',      // pointed hood merging into outfit
+  'bear_ears',       // round bear ears with pink inner
+])
+
+// ── Built-in character registry ───────────────────────────────────────────────
 
 const CHARS = {
   elf_princess: {
@@ -117,6 +156,65 @@ const CHARS = {
     style:   'red_shirt',
     plump:   true,                       // wider body
   },
+}
+
+// ── Public character registration API ─────────────────────────────────────────
+
+/**
+ * Register a new character so generateSpriteSheet can render it.
+ *
+ * @param {string} id       - Must match the character's id in characters.json
+ * @param {object} def      - Character definition (see schema comment above)
+ *
+ * Example:
+ *   registerCharacter('merlin', {
+ *     body: '#8070B0', bodyD: '#604890',
+ *     head: '#9080C0', headD: '#705898',
+ *     eyes: '#201840',
+ *     ears: '#8070B0',
+ *     outfit: '#304898', outfitD: '#1C2D70',
+ *     trim: '#C8A040',
+ *     belt: '#483018',
+ *     feet: '#302060', feetD: '#1C1040',
+ *     special: 'deerstalker',
+ *     style: 'detective_coat',
+ *   })
+ */
+export function registerCharacter(id, def) {
+  if (!STYLES.includes(def.style)) {
+    console.warn(`[spriteGen] Unknown style "${def.style}" for character "${id}". Falling back to "dress".`)
+    def = { ...def, style: 'dress' }
+  }
+  if (def.special && !SPECIALS.includes(def.special)) {
+    console.warn(`[spriteGen] Unknown special "${def.special}" for character "${id}". Accessory will be skipped.`)
+    def = { ...def, special: null }
+  }
+  CHARS[id] = def
+}
+
+/**
+ * Returns a fully-populated character definition with sensible defaults filled
+ * in for any missing optional fields. Useful as a starting point when calling
+ * registerCharacter.
+ *
+ * @param {Partial<object>} overrides
+ * @returns {object}
+ */
+export function createCharDef(overrides = {}) {
+  return {
+    body:    '#A09898', bodyD:  '#807070',
+    head:    '#B0A8A8', headD:  '#907878',
+    eyes:    '#201818',
+    ears:    '#A09898',
+    outfit:  '#6870A0', outfitD: '#485080',
+    trim:    '#D0C060',
+    belt:    '#503820',
+    feet:    '#3A2818', feetD:  '#221808',
+    special: null,
+    style:   'dress',
+    plump:   false,
+    ...overrides,
+  }
 }
 
 // ── Walk cycle tables ──────────────────────────────────────────────────────────

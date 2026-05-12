@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import WorldStage from './components/WorldStage'
 import CharacterSprite from './components/CharacterSprite'
@@ -11,7 +11,9 @@ import { useGameState } from './hooks/useGameState'
 import { useDailyReport } from './hooks/useDailyReport'
 import { useVisitor } from './hooks/useVisitor'
 import { useCrisis } from './hooks/useCrisis'
+import { useHeritage, toRoman } from './hooks/useHeritage'
 import CrisisModal from './components/CrisisModal'
+import HeirModal from './components/HeirModal'
 import { getTimeState } from './hooks/useGameTime'
 import characters from './data/characters.json'
 
@@ -90,11 +92,22 @@ export default function App() {
   const [gameState, updateState] = useGameState()
   const { currentVisitor, summonVisitor, dismissVisitor } = useVisitor()
   const { crisisEvent, isDamaged, triggerCrisis, dismissCrisis } = useCrisis(gameState, updateState)
+  const { ageDays, eraPrestige, totalPrestige, forceUnlock, restartWithHeir } = useHeritage(gameState, updateState)
   const [debugHour, setDebugHour]           = useState(() => new Date().getHours())
   const [shopOpen, setShopOpen]             = useState(false)
   const [mailboxOpen, setMailboxOpen]       = useState(false)
   const [accountOpen, setAccountOpen]       = useState(false)
   const [visitorModalOpen, setVisitorModalOpen] = useState(false)
+  const [heirModalOpen, setHeirModalOpen]   = useState(false)
+
+  // Auto-open the Heir modal exactly once when the milestone is first reached
+  const prevHeirUnlocked = useRef(false)
+  useEffect(() => {
+    if (gameState.heirUnlocked && !prevHeirUnlocked.current) {
+      setHeirModalOpen(true)
+    }
+    prevHeirUnlocked.current = gameState.heirUnlocked
+  }, [gameState.heirUnlocked])
 
   // Blessing is live if its expiry date is today or later
   const today = new Date()
@@ -166,6 +179,21 @@ export default function App() {
               ◈ {gameState.gold}g
             </p>
 
+            <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: '0.7rem' }}>·</span>
+
+            <p
+              style={{
+                fontFamily: "'Nunito', sans-serif",
+                fontSize: 'clamp(0.7rem, 1.8vw, 0.9rem)',
+                color: 'rgba(255,255,255,0.50)',
+                letterSpacing: '0.06em',
+                textShadow: '0 1px 8px rgba(0,0,0,0.9)',
+                fontWeight: 600,
+              }}
+            >
+              Day {ageDays}
+            </p>
+
             {isBlessingLive && (
               <motion.span
                 style={{
@@ -187,6 +215,24 @@ export default function App() {
 
         {/* Top-right: icon buttons */}
         <div className="absolute top-5 right-5 flex gap-3 pointer-events-auto">
+          {gameState.heirUnlocked && (
+            <motion.button
+              onClick={() => setHeirModalOpen(true)}
+              className="w-12 h-12 rounded-full flex items-center justify-center text-xl"
+              style={{
+                background: 'rgba(240,200,64,0.18)',
+                boxShadow: '0 2px 14px rgba(0,0,0,0.35), 0 0 20px rgba(240,200,64,0.25)',
+                border: '1px solid rgba(240,200,64,0.40)',
+                color: '#F0C840',
+              }}
+              animate={{ scale: [1, 1.08, 1] }}
+              transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+              aria-label="Heir Announcement"
+            >
+              ⚜
+            </motion.button>
+          )}
+
           <HudButton
             label="Shop"
             onClick={() => { closeAll(); setShopOpen(true) }}
@@ -269,6 +315,10 @@ export default function App() {
             onResetReport={resetReport}
             onSummonVisitor={summonVisitor}
             onTriggerCrisis={triggerCrisis}
+            ageDays={ageDays}
+            eraPrestige={eraPrestige}
+            totalPrestige={totalPrestige}
+            onForceUnlock={forceUnlock}
           />
         )}
       </AnimatePresence>
@@ -279,6 +329,20 @@ export default function App() {
             key="crisis-modal"
             crisisEvent={crisisEvent}
             onDismiss={dismissCrisis}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {heirModalOpen && (
+          <HeirModal
+            key="heir-modal"
+            gameState={gameState}
+            ageDays={ageDays}
+            eraPrestige={eraPrestige}
+            totalPrestige={totalPrestige}
+            onContinue={() => setHeirModalOpen(false)}
+            onRestart={() => { restartWithHeir(); setHeirModalOpen(false) }}
           />
         )}
       </AnimatePresence>

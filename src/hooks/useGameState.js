@@ -15,6 +15,11 @@ const DEFAULT_STATE = {
   activeTreaties: [],
   // null, or character id
   guardId: null,
+  // Heritage / legacy system
+  foundedAt:        Date.now(), // ms timestamp — kingdom birth date
+  prestigePoints:   0,          // carries over across heir restarts
+  legacyGeneration: 1,          // increments each time Restart with Heir is used
+  heirUnlocked:     false,      // true once Stone Manor + 3 treaties condition met
 }
 
 function loadState() {

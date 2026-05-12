@@ -344,7 +344,7 @@ export default function CharacterSprite({
               <SpriteCanvas
                 characterId={heroData.id}
                 animation={getAnimation()}
-                scale={2}
+                scale={1}
               />
             </div>
           </div>

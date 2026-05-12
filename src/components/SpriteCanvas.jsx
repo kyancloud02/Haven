@@ -1,10 +1,10 @@
 /**
- * SpriteCanvas — renders an animated pixel-art character from a sprite sheet.
+ * SpriteCanvas — renders one animation from a procedurally generated sprite sheet.
  *
- * The sheet is generated once per character on first use, cached in
- * localStorage, and then decoded into an Image element kept in a ref.
- * Animation runs in a requestAnimationFrame loop that reads from a single
- * mutable `animRef` so the loop never needs to restart when animation changes.
+ * The sheet (512×448, 64px frames) is built once per character, cached in
+ * localStorage, and decoded into an Image ref. A single RAF loop reads from a
+ * mutable animRef so changing `animation` never restarts the loop — it just
+ * switches which row the loop samples.
  */
 
 import { useEffect, useRef, useState } from 'react'
@@ -16,14 +16,10 @@ import {
   setCachedSprite,
 } from '../lib/spriteGen'
 
-export default function SpriteCanvas({ characterId, animation = 'idle', scale = 2, style }) {
+export default function SpriteCanvas({ characterId, animation = 'idle', scale = 1, style }) {
   const canvasRef = useRef(null)
-  const spriteRef = useRef(null)       // decoded Image element
-  const animRef   = useRef({           // mutable loop state — no re-renders
-    key:   animation,
-    frame: 0,
-    timer: 0,
-  })
+  const spriteRef = useRef(null)
+  const animRef   = useRef({ key: animation, frame: 0, timer: 0 })
   const [ready, setReady] = useState(false)
 
   // ── Load / generate sprite sheet ──────────────────────────────────────────
@@ -31,7 +27,7 @@ export default function SpriteCanvas({ characterId, animation = 'idle', scale = 
     let cancelled = false
 
     function attach(src) {
-      const img = new Image()
+      const img  = new Image()
       img.onload = () => {
         if (cancelled) return
         spriteRef.current = img
@@ -44,7 +40,6 @@ export default function SpriteCanvas({ characterId, animation = 'idle', scale = 
     if (cached) {
       attach(cached)
     } else {
-      // Defer to avoid blocking the first paint
       const id = setTimeout(() => {
         if (cancelled) return
         const dataUrl = generateSpriteSheet(characterId)
@@ -57,13 +52,10 @@ export default function SpriteCanvas({ characterId, animation = 'idle', scale = 
     return () => { cancelled = true }
   }, [characterId])
 
-  // ── Sync animation key into the loop ref ──────────────────────────────────
-  // Resets frame/timer when animation changes so walk cycles start cleanly.
+  // ── Sync animation key into loop ref ──────────────────────────────────────
   useEffect(() => {
     if (animRef.current.key !== animation) {
-      animRef.current.key   = animation
-      animRef.current.frame = 0
-      animRef.current.timer = 0
+      animRef.current = { key: animation, frame: 0, timer: 0 }
     }
   }, [animation])
 
@@ -73,15 +65,17 @@ export default function SpriteCanvas({ characterId, animation = 'idle', scale = 
 
     const canvas = canvasRef.current
     const ctx    = canvas.getContext('2d')
-    ctx.imageSmoothingEnabled = false
+    // Keep smoothing enabled to match the hand-painted art style
+    ctx.imageSmoothingEnabled = true
+    ctx.imageSmoothingQuality = 'high'
 
     let rafId
-    let lastTime = performance.now()
-    const displaySize = FRAME * scale
+    let lastTime  = performance.now()
+    const display = FRAME * scale
 
     function tick(now) {
       const dt = Math.min((now - lastTime) / 1000, 0.1)
-      lastTime = now
+      lastTime  = now
 
       const a    = animRef.current
       const meta = ANIM_META[a.key] ?? ANIM_META.idle
@@ -92,43 +86,36 @@ export default function SpriteCanvas({ characterId, animation = 'idle', scale = 
         a.frame  = (a.frame + 1) % meta.frames
       }
 
-      ctx.clearRect(0, 0, displaySize, displaySize)
+      ctx.clearRect(0, 0, display, display)
       ctx.drawImage(
         spriteRef.current,
-        a.frame * FRAME,   // source x
-        meta.row * FRAME,  // source y
+        a.frame * FRAME,   // src x
+        meta.row  * FRAME, // src y
         FRAME, FRAME,
         0, 0,
-        displaySize, displaySize,
+        display, display,
       )
 
       rafId = requestAnimationFrame(tick)
     }
 
-    // Draw first frame immediately so there's no blank flash
-    const meta = ANIM_META[animRef.current.key] ?? ANIM_META.idle
-    const dSize = FRAME * scale
-    ctx.clearRect(0, 0, dSize, dSize)
-    ctx.drawImage(spriteRef.current, 0, meta.row * FRAME, FRAME, FRAME, 0, 0, dSize, dSize)
+    // Draw first frame immediately — no blank flash
+    const meta  = ANIM_META[animRef.current.key] ?? ANIM_META.idle
+    ctx.clearRect(0, 0, display, display)
+    ctx.drawImage(spriteRef.current, 0, meta.row * FRAME, FRAME, FRAME, 0, 0, display, display)
 
     rafId = requestAnimationFrame(tick)
     return () => cancelAnimationFrame(rafId)
   }, [ready, scale])
 
-  const displaySize = FRAME * scale
+  const display = FRAME * scale
 
   return (
     <canvas
       ref={canvasRef}
-      width={displaySize}
-      height={displaySize}
-      style={{
-        imageRendering: 'pixelated',
-        display: 'block',
-        width: displaySize,
-        height: displaySize,
-        ...style,
-      }}
+      width={display}
+      height={display}
+      style={{ display: 'block', width: display, height: display, ...style }}
     />
   )
 }

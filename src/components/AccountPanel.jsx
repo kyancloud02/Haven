@@ -9,7 +9,7 @@ const STATE_META = {
   SLEEP: { accent: '#8890CC', label: 'Sleep · Night',   range: '22 – 07' },
 }
 
-export default function AccountPanel({ onClose, debugHour, onDebugHourChange, onResetReport, onSummonVisitor, onTriggerCrisis }) {
+export default function AccountPanel({ onClose, debugHour, onDebugHourChange, onResetReport, onSummonVisitor, onTriggerCrisis, ageDays, eraPrestige, totalPrestige, onForceUnlock }) {
   const timeState = getTimeState(debugHour)
   const meta = STATE_META[timeState]
   const displayHour = String(debugHour).padStart(2, '0') + ':00'
@@ -159,6 +159,34 @@ export default function AccountPanel({ onClose, debugHour, onDebugHourChange, on
               onMouseLeave={e => { e.currentTarget.style.background = 'rgba(200,48,48,0.12)'; e.currentTarget.style.color = 'rgba(220,100,100,0.75)' }}
             >
               Trigger Raid
+            </button>
+          </div>
+
+          {/* Heritage */}
+          <div className="mt-4" style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 16 }}>
+            <p
+              className="mb-2"
+              style={{ fontFamily: "'Nunito', sans-serif", color: 'rgba(255,255,255,0.45)', fontSize: '0.7rem', letterSpacing: '0.10em', textTransform: 'uppercase' }}
+            >
+              Heritage
+            </p>
+            <div className="flex justify-between mb-3" style={{ fontFamily: 'monospace', fontSize: '0.7rem', color: 'rgba(255,255,255,0.35)' }}>
+              <span>Day {ageDays}</span>
+              <span style={{ color: '#F0C840' }}>+{eraPrestige} pts · {totalPrestige} total</span>
+            </div>
+            <button
+              onClick={onForceUnlock}
+              className="w-full py-2 rounded-lg text-xs font-bold tracking-wide"
+              style={{
+                fontFamily: "'Nunito', sans-serif",
+                background: 'rgba(240,200,64,0.08)',
+                color: 'rgba(240,200,64,0.55)',
+                border: '1px solid rgba(240,200,64,0.18)',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(240,200,64,0.16)'; e.currentTarget.style.color = '#F0C840' }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(240,200,64,0.08)'; e.currentTarget.style.color = 'rgba(240,200,64,0.55)' }}
+            >
+              Trigger Heir Announcement
             </button>
           </div>
 

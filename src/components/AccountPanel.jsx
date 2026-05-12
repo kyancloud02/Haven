@@ -9,7 +9,7 @@ const STATE_META = {
   SLEEP: { accent: '#8890CC', label: 'Sleep · Night',   range: '22 – 07' },
 }
 
-export default function AccountPanel({ onClose, debugHour, onDebugHourChange, onResetReport }) {
+export default function AccountPanel({ onClose, debugHour, onDebugHourChange, onResetReport, onSummonVisitor }) {
   const timeState = getTimeState(debugHour)
   const meta = STATE_META[timeState]
   const displayHour = String(debugHour).padStart(2, '0') + ':00'
@@ -114,8 +114,32 @@ export default function AccountPanel({ onClose, debugHour, onDebugHourChange, on
             ))}
           </div>
 
-          {/* Daily report reset */}
+          {/* Visitor summon */}
           <div className="mt-6" style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 16 }}>
+            <p
+              className="mb-2"
+              style={{ fontFamily: "'Nunito', sans-serif", color: 'rgba(255,255,255,0.45)', fontSize: '0.7rem', letterSpacing: '0.10em', textTransform: 'uppercase' }}
+            >
+              Visitors
+            </p>
+            <button
+              onClick={onSummonVisitor}
+              className="w-full py-2 rounded-lg text-xs font-bold tracking-wide"
+              style={{
+                fontFamily: "'Nunito', sans-serif",
+                background: 'rgba(255,255,255,0.06)',
+                color: 'rgba(255,255,255,0.45)',
+                border: '1px solid rgba(255,255,255,0.10)',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.10)'; e.currentTarget.style.color = 'white' }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.06)'; e.currentTarget.style.color = 'rgba(255,255,255,0.45)' }}
+            >
+              Summon Visitor
+            </button>
+          </div>
+
+          {/* Daily report reset */}
+          <div className="mt-4" style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: 16 }}>
             <p
               className="mb-2"
               style={{ fontFamily: "'Nunito', sans-serif", color: 'rgba(255,255,255,0.45)', fontSize: '0.7rem', letterSpacing: '0.10em', textTransform: 'uppercase' }}

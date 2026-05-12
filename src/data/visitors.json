@@ -1,0 +1,88 @@
+[
+  {
+    "id": "traveling_merchant",
+    "name": "Traveling Merchant",
+    "title": "Goods & Curiosities of the Wandering Roads",
+    "accent": "#E8A840",
+    "spriteKey": "merchant",
+    "greeting": "Ahh — a settlement! I've been on the road three days and this is the most promising thing I've seen. I have something for you: a Mystery Seed, pulled from the forests south of the Amber River. Rare thing. Ten gold and it's yours.",
+    "choices": [
+      {
+        "id": "buy",
+        "label": "Buy the Mystery Seed",
+        "cost": 10,
+        "minGold": 10,
+        "outcome": "gold_spend",
+        "response": "Excellent taste. Plant it somewhere with good light — these seeds have opinions about that. Safe travels, friend. I'll find my way back through here eventually."
+      },
+      {
+        "id": "pass",
+        "label": "Not today",
+        "cost": 0,
+        "minGold": 0,
+        "outcome": "none",
+        "response": "No hard feelings. The road goes on. Perhaps next time."
+      }
+    ]
+  },
+  {
+    "id": "oak_diplomat",
+    "name": "Envoy of the Great Oak",
+    "title": "Diplomat · Great Oak Kingdom",
+    "accent": "#4878D8",
+    "spriteKey": "diplomat",
+    "greeting": "The Great Oak Kingdom sends their regards. Our council has observed your settlement with genuine interest — you've built something worth noticing. We believe an alliance would serve us both well. Will you sign a peace treaty with the Great Oak? Your trade routes would carry our blessing.",
+    "choices": [
+      {
+        "id": "sign",
+        "label": "Sign the treaty",
+        "cost": 0,
+        "minGold": 0,
+        "outcome": "treaty",
+        "treatyId": "great_oak",
+        "treatyName": "Great Oak Peace Treaty",
+        "treatyKingdom": "Great Oak Kingdom",
+        "goldBonus": 0.10,
+        "response": "Wonderful. The Great Oak remembers its allies. You will find our trade routes generous and our memory long. This is the beginning of something good."
+      },
+      {
+        "id": "decline",
+        "label": "Respectfully decline",
+        "cost": 0,
+        "minGold": 0,
+        "outcome": "none",
+        "response": "Understood. The council respects careful consideration. The invitation remains open should your position change. Safe travels."
+      }
+    ]
+  },
+  {
+    "id": "northern_orc",
+    "name": "Krag of the Northern Clans",
+    "title": "Scout · Northern Clan Riders",
+    "accent": "#5A9850",
+    "spriteKey": "orc",
+    "greeting": "Long road from the northern ridges. Your fires looked warm from the pass. The clans have been watching this place — some say it's worth knowing. I say it's worth finding out. You willing to share a meal? We pay our debts.",
+    "choices": [
+      {
+        "id": "host",
+        "label": "Offer hospitality (5g)",
+        "cost": 5,
+        "minGold": 5,
+        "outcome": "gold_spend_treaty",
+        "treatyId": "northern_clans",
+        "treatyName": "Northern Clans Accord",
+        "treatyKingdom": "Northern Clan Riders",
+        "goldBonus": 0.08,
+        "response": "Good. That's good. The clans remember hospitality — carries more weight than gold where we're from. You've made a solid friend today."
+      },
+      {
+        "id": "turn_away",
+        "label": "Turn them away",
+        "cost": 0,
+        "minGold": 0,
+        "outcome": "none",
+        "response": "No offense taken. The road goes both ways. We'll find warmth elsewhere."
+      }
+    ]
+  }
+]

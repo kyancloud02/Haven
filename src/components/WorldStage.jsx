@@ -385,7 +385,7 @@ const BUILDINGS = [
 ]
 
 // ─── Component ─────────────────────────────────────────────────────────────────
-export default function WorldStage({ overrideHour, housingTier = 'Cardboard Box' }) {
+export default function WorldStage({ overrideHour, housingTier = 'Cardboard Box', isDamaged = false }) {
   const realTimeState = useGameTime()
   const timeState = overrideHour !== undefined ? getTimeState(overrideHour) : realTimeState
   const T = THEMES[timeState]
@@ -596,6 +596,38 @@ export default function WorldStage({ overrideHour, housingTier = 'Cardboard Box'
           >
             <Cmp T={T} EASE={EASE} />
           </motion.g>
+        ))}
+
+        {/* ── Crisis damage — red tint + cracks + smoke ── */}
+        <motion.g
+          animate={{ opacity: isDamaged ? 1 : 0 }}
+          transition={{ duration: 1.2 }}
+          style={{ pointerEvents: 'none' }}
+        >
+          {/* Red danger wash over building */}
+          <rect x={300} y={218} width={200} height={165} fill="rgba(200,30,10,0.10)" />
+          {/* Crack lines */}
+          <polyline points="382,242 371,272 387,296" fill="none" stroke="#CC1808" strokeWidth="2" strokeLinejoin="round" opacity={0.65} />
+          <polyline points="416,258 429,284 418,312" fill="none" stroke="#CC1808" strokeWidth="1.6" strokeLinejoin="round" opacity={0.55} />
+          <polyline points="396,260 390,278 401,290" fill="none" stroke="#DD2010" strokeWidth="1.2" strokeLinejoin="round" opacity={0.45} />
+        </motion.g>
+
+        {/* Smoke puffs — only animate when damaged */}
+        {isDamaged && [
+          { cx: 383, delay: 0   },
+          { cx: 400, delay: 0.9 },
+          { cx: 417, delay: 1.7 },
+        ].map(({ cx, delay }, i) => (
+          <motion.circle
+            key={`smk${i}`}
+            cx={cx}
+            cy={262}
+            r={7}
+            fill="rgba(88,78,68,0.60)"
+            initial={{ y: 0, r: 7, opacity: 0 }}
+            animate={{ y: -52, r: 18, opacity: [0, 0.55, 0] }}
+            transition={{ duration: 2.6, delay, repeat: Infinity, ease: 'easeOut' }}
+          />
         ))}
 
         {/* ── Ground near ── */}

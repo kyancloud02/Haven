@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence, useMotionValue, animate } from 'framer-motion'
-import { SPRITES, CHARACTER_ACCENT } from './CharacterSprites'
+import { CHARACTER_ACCENT } from './CharacterSprites'
+import SpriteCanvas from './SpriteCanvas'
 import dialogue from '../data/dialogue.json'
 
 const BARK_DURATION = 5000
@@ -117,8 +118,40 @@ function Crown() {
   )
 }
 
+// ─── Shield badge ─────────────────────────────────────────────────────────────
+function Shield() {
+  return (
+    <motion.svg
+      viewBox="0 0 32 38"
+      className="absolute pointer-events-none"
+      style={{ top: -38, left: '50%', transform: 'translateX(-50%)', width: 26 }}
+      initial={{ opacity: 0, y: 4 }}
+      animate={{ opacity: 1, y: [0, -2, 0] }}
+      exit={{ opacity: 0, y: 4, scale: 0.8 }}
+      transition={{
+        opacity: { duration: 0.3 },
+        y: { duration: 3, repeat: Infinity, ease: 'easeInOut' },
+      }}
+    >
+      <defs>
+        <filter id="shield-glow" x="-40%" y="-40%" width="180%" height="180%">
+          <feGaussianBlur stdDeviation="1.8" result="b" />
+          <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
+        </filter>
+      </defs>
+      <path d="M16,2 L30,8 L30,20 C30,30 16,36 16,36 C16,36 2,30 2,20 L2,8 Z"
+        fill="#3A70D8" stroke="#2050B8" strokeWidth="1.4" strokeLinejoin="round"
+        filter="url(#shield-glow)" />
+      <path d="M16,2 L30,8 L30,20 C30,30 16,36 16,36 L16,2 Z"
+        fill="#1A40A8" opacity={0.35} />
+      <line x1="16" y1="8" x2="16" y2="30" stroke="white" strokeWidth="1.8" opacity={0.55} />
+      <line x1="9"  y1="19" x2="23" y2="19" stroke="white" strokeWidth="1.8" opacity={0.55} />
+    </motion.svg>
+  )
+}
+
 // ─── Context menu ─────────────────────────────────────────────────────────────
-function ContextMenu({ x, y, heroName, isLeader, onCoronate, onClose }) {
+function ContextMenu({ x, y, heroName, isLeader, isGuard, canBeGuard, onCoronate, onAssignGuard, onRemoveGuard, onClose }) {
   const menuRef = useRef(null)
   useEffect(() => {
     function handleClickOutside(e) {
@@ -156,6 +189,17 @@ function ContextMenu({ x, y, heroName, isLeader, onCoronate, onClose }) {
           <span className="text-base leading-none">👑</span>
           {isLeader ? 'Already the Leader' : 'Coronate as Leader'}
         </button>
+
+        {canBeGuard && (
+          <button
+            className={`w-full text-left px-3 py-2 text-sm flex items-center gap-2 transition-colors
+              ${isGuard ? 'text-red-400 hover:bg-stone-700 cursor-pointer' : 'text-blue-400 hover:bg-stone-700 cursor-pointer'}`}
+            onClick={() => { isGuard ? onRemoveGuard() : onAssignGuard(); onClose() }}
+          >
+            <span className="text-base leading-none">🛡</span>
+            {isGuard ? 'Remove Guard Duty' : 'Assign as Guard'}
+          </button>
+        )}
       </div>
     </motion.div>
   )
@@ -173,16 +217,34 @@ export default function CharacterSprite({
   const [menu, setMenu]         = useState(null)
   const [bark, setBark]         = useState(null)
   const [dragging, setDragging] = useState(false)
+  const [dragVel, setDragVel]   = useState({ x: 0, y: 0 })
   const barkTimer  = useRef(null)
   const isDragging = useRef(false)
   const isLeader   = gameState.currentLeaderId === heroData.id
-  const SpriteCmp  = SPRITES[heroData.id]
+  const isGuard    = gameState.guardId === heroData.id
+  const canBeGuard = heroData.permittedRoles?.includes('Guard') ?? false
 
   // Separate motion values so x persists after drop while y springs back
   const dragX = useMotionValue(0)
   const dragY = useMotionValue(0)
 
   useEffect(() => () => clearTimeout(barkTimer.current), [])
+
+  // Map current state to sprite animation key
+  function getAnimation() {
+    if (bark) return 'talk'
+    if (dragging) {
+      const speed = Math.sqrt(dragVel.x ** 2 + dragVel.y ** 2)
+      if (speed > 30) {
+        if (Math.abs(dragVel.x) > Math.abs(dragVel.y)) {
+          return dragVel.x > 0 ? 'walk_right' : 'walk_left'
+        }
+        return dragVel.y > 0 ? 'walk_down' : 'walk_up'
+      }
+    }
+    if (isGuard) return 'walk_left'   // guard faces left toward Haven center
+    return 'idle'
+  }
 
   // Left-click: bark (only when not dragging)
   const handleClick = useCallback(() => {
@@ -210,16 +272,13 @@ export default function CharacterSprite({
     })
   }, [])
 
-  const coronate = useCallback(() => {
-    updateState({ currentLeaderId: heroData.id })
-  }, [heroData.id, updateState])
+  const coronate    = useCallback(() => updateState({ currentLeaderId: heroData.id }), [heroData.id, updateState])
+  const assignGuard = useCallback(() => updateState({ guardId: heroData.id }),         [heroData.id, updateState])
+  const removeGuard = useCallback(() => updateState({ guardId: null }),                [updateState])
 
-  // Initial position: spread characters evenly along the bottom
+  // Initial position: guard anchors at the right edge of Haven, others spread evenly
   const spread      = totalCharacters > 1 ? 84 / (totalCharacters - 1) : 0
   const leftPercent = 8 + spriteIndex * spread  // 8% – 92%
-
-  const floatDuration = 2.8 + spriteIndex * 0.38
-  const floatDelay    = spriteIndex * 0.52
 
   return (
     <>
@@ -229,7 +288,10 @@ export default function CharacterSprite({
         whileHover={!dragging ? { scale: 1.04 } : {}}
         style={{
           position: 'absolute',
-          left: `calc(${leftPercent}% - 32px)`,
+          ...(isGuard
+            ? { right: '4%', left: 'auto' }
+            : { left: `calc(${leftPercent}% - 32px)` }
+          ),
           bottom: '9%',
           cursor: dragging ? 'grabbing' : 'grab',
           zIndex: dragging ? 100 : 1,
@@ -243,10 +305,11 @@ export default function CharacterSprite({
           isDragging.current = true
           setDragging(true)
         }}
+        onDrag={(_, info) => setDragVel({ x: info.velocity.x, y: info.velocity.y })}
         onDragEnd={() => {
           setTimeout(() => { isDragging.current = false }, 80)
           setDragging(false)
-          // Spring Y back to ground; X stays where they dropped
+          setDragVel({ x: 0, y: 0 })
           animate(dragY, 0, { type: 'spring', stiffness: 380, damping: 28 })
         }}
         onClick={handleClick}
@@ -255,6 +318,7 @@ export default function CharacterSprite({
         <div className="relative flex flex-col items-center select-none">
           <AnimatePresence>
             {isLeader && <Crown key="crown" />}
+            {isGuard && !isLeader && <Shield key="shield" />}
           </AnimatePresence>
 
           {/* Bubble + sprite wrapper */}
@@ -270,19 +334,19 @@ export default function CharacterSprite({
               )}
             </AnimatePresence>
 
-            <motion.div
-              style={isLeader ? { filter: 'drop-shadow(0 0 8px rgba(255,200,0,0.7))' } : {}}
-              animate={{ y: [0, -5, 0] }}
-              transition={{ duration: floatDuration, repeat: Infinity, ease: 'easeInOut', delay: floatDelay }}
+            <div
+              style={
+                isLeader ? { filter: 'drop-shadow(0 0 10px rgba(255,200,0,0.8))' }
+                : isGuard ? { filter: 'drop-shadow(0 0 12px rgba(58,112,216,0.85))' }
+                : {}
+              }
             >
-              {SpriteCmp ? <SpriteCmp /> : (
-                <svg viewBox="0 0 64 96" width="64" height="96">
-                  <ellipse cx="32" cy="92" rx="18" ry="3.5" fill="rgba(0,0,0,0.22)"/>
-                  <circle cx="32" cy="55" r="28" fill="#888"/>
-                  <circle cx="32" cy="33" r="18" fill="#AAA"/>
-                </svg>
-              )}
-            </motion.div>
+              <SpriteCanvas
+                characterId={heroData.id}
+                animation={getAnimation()}
+                scale={2}
+              />
+            </div>
           </div>
 
           {/* Name tag */}
@@ -297,10 +361,11 @@ export default function CharacterSprite({
             {heroData.name.split(' ')[0]}
           </p>
 
-          {/* Leader tag */}
+          {/* Role tags */}
           <AnimatePresence>
             {isLeader && (
               <motion.span
+                key="leader-tag"
                 className="mt-0.5 text-[9px] font-black tracking-widest uppercase text-amber-300"
                 style={{ textShadow: '0 0 8px rgba(255,180,0,0.8)', fontFamily: "'Nunito', sans-serif" }}
                 initial={{ opacity: 0 }}
@@ -308,6 +373,18 @@ export default function CharacterSprite({
                 exit={{ opacity: 0 }}
               >
                 Leader
+              </motion.span>
+            )}
+            {isGuard && (
+              <motion.span
+                key="guard-tag"
+                className="mt-0.5 text-[9px] font-black tracking-widest uppercase"
+                style={{ color: '#5A8AE8', textShadow: '0 0 8px rgba(58,112,216,0.8)', fontFamily: "'Nunito', sans-serif" }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+              >
+                Guard
               </motion.span>
             )}
           </AnimatePresence>
@@ -320,7 +397,11 @@ export default function CharacterSprite({
             x={menu.x} y={menu.y}
             heroName={heroData.name}
             isLeader={isLeader}
+            isGuard={isGuard}
+            canBeGuard={canBeGuard}
             onCoronate={coronate}
+            onAssignGuard={assignGuard}
+            onRemoveGuard={removeGuard}
             onClose={() => setMenu(null)}
           />
         )}

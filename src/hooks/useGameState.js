@@ -13,6 +13,8 @@ const DEFAULT_STATE = {
   blessing: null,
   // [{ id, name, kingdom, goldBonus, signedAt }]
   activeTreaties: [],
+  // null, or character id
+  guardId: null,
 }
 
 function loadState() {

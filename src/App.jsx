@@ -10,6 +10,8 @@ import MailboxPanel from './components/MailboxPanel'
 import { useGameState } from './hooks/useGameState'
 import { useDailyReport } from './hooks/useDailyReport'
 import { useVisitor } from './hooks/useVisitor'
+import { useCrisis } from './hooks/useCrisis'
+import CrisisModal from './components/CrisisModal'
 import { getTimeState } from './hooks/useGameTime'
 import characters from './data/characters.json'
 
@@ -87,6 +89,7 @@ function HudButton({ onClick, label, badge = false, children }) {
 export default function App() {
   const [gameState, updateState] = useGameState()
   const { currentVisitor, summonVisitor, dismissVisitor } = useVisitor()
+  const { crisisEvent, isDamaged, triggerCrisis, dismissCrisis } = useCrisis(gameState, updateState)
   const [debugHour, setDebugHour]           = useState(() => new Date().getHours())
   const [shopOpen, setShopOpen]             = useState(false)
   const [mailboxOpen, setMailboxOpen]       = useState(false)
@@ -115,7 +118,7 @@ export default function App() {
     <div className="relative w-full h-screen overflow-hidden bg-stone-950">
 
       {/* ── Full-screen world scene ── */}
-      <WorldStage overrideHour={IS_DEV ? debugHour : undefined} housingTier={gameState.housingTier} />
+      <WorldStage overrideHour={IS_DEV ? debugHour : undefined} housingTier={gameState.housingTier} isDamaged={isDamaged} />
 
       {/* ── HUD overlay ── */}
       <div className="absolute inset-0 pointer-events-none">
@@ -265,6 +268,17 @@ export default function App() {
             onDebugHourChange={setDebugHour}
             onResetReport={resetReport}
             onSummonVisitor={summonVisitor}
+            onTriggerCrisis={triggerCrisis}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {crisisEvent && (
+          <CrisisModal
+            key="crisis-modal"
+            crisisEvent={crisisEvent}
+            onDismiss={dismissCrisis}
           />
         )}
       </AnimatePresence>

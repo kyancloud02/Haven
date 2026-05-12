@@ -11,6 +11,8 @@ const DEFAULT_STATE = {
   currentLeaderId: 'king',
   // null, or { expiresDate: 'YYYY-MM-DD', multiplier: 1.2, itemName, characterName }
   blessing: null,
+  // [{ id, name, kingdom, goldBonus, signedAt }]
+  activeTreaties: [],
 }
 
 function loadState() {

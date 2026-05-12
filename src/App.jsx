@@ -2,11 +2,14 @@ import { useState } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import WorldStage from './components/WorldStage'
 import CharacterSprite from './components/CharacterSprite'
+import VisitorSprite from './components/VisitorSprite'
+import VisitorModal from './components/VisitorModal'
 import AccountPanel from './components/AccountPanel'
 import ShopPanel from './components/ShopPanel'
 import MailboxPanel from './components/MailboxPanel'
 import { useGameState } from './hooks/useGameState'
 import { useDailyReport } from './hooks/useDailyReport'
+import { useVisitor } from './hooks/useVisitor'
 import { getTimeState } from './hooks/useGameTime'
 import characters from './data/characters.json'
 
@@ -83,10 +86,12 @@ function HudButton({ onClick, label, badge = false, children }) {
 // ─── Root ─────────────────────────────────────────────────────────────────────
 export default function App() {
   const [gameState, updateState] = useGameState()
-  const [debugHour, setDebugHour]     = useState(() => new Date().getHours())
-  const [shopOpen, setShopOpen]       = useState(false)
-  const [mailboxOpen, setMailboxOpen] = useState(false)
-  const [accountOpen, setAccountOpen] = useState(false)
+  const { currentVisitor, summonVisitor, dismissVisitor } = useVisitor()
+  const [debugHour, setDebugHour]           = useState(() => new Date().getHours())
+  const [shopOpen, setShopOpen]             = useState(false)
+  const [mailboxOpen, setMailboxOpen]       = useState(false)
+  const [accountOpen, setAccountOpen]       = useState(false)
+  const [visitorModalOpen, setVisitorModalOpen] = useState(false)
 
   // Blessing is live if its expiry date is today or later
   const today = new Date()
@@ -214,6 +219,17 @@ export default function App() {
             totalCharacters={characters.length}
           />
         ))}
+
+        {/* Visitor */}
+        <AnimatePresence>
+          {currentVisitor && (
+            <VisitorSprite
+              key={currentVisitor.id}
+              visitor={currentVisitor}
+              onOpenModal={() => setVisitorModalOpen(true)}
+            />
+          )}
+        </AnimatePresence>
       </div>
 
       {/* ── Sliding panels ── */}
@@ -248,6 +264,20 @@ export default function App() {
             debugHour={debugHour}
             onDebugHourChange={setDebugHour}
             onResetReport={resetReport}
+            onSummonVisitor={summonVisitor}
+          />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {visitorModalOpen && currentVisitor && (
+          <VisitorModal
+            key="visitor-modal"
+            visitor={currentVisitor}
+            gameState={gameState}
+            updateState={updateState}
+            onClose={() => setVisitorModalOpen(false)}
+            onDismiss={() => { setVisitorModalOpen(false); dismissVisitor() }}
           />
         )}
       </AnimatePresence>

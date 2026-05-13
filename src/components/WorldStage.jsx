@@ -385,7 +385,7 @@ const BUILDINGS = [
 ]
 
 // ─── Component ─────────────────────────────────────────────────────────────────
-export default function WorldStage({ overrideHour, housingTier = 'Cardboard Box', isDamaged = false }) {
+export default function WorldStage({ overrideHour, housingTier = 'Cardboard Box', isDamaged = false, onEnterHouse }) {
   const realTimeState = useGameTime()
   const timeState = overrideHour !== undefined ? getTimeState(overrideHour) : realTimeState
   const T = THEMES[timeState]
@@ -714,6 +714,22 @@ export default function WorldStage({ overrideHour, housingTier = 'Cardboard Box'
           transition={EASE}
           style={{ pointerEvents: 'none' }}
         />
+
+        {/* ── Clickable door (enter house) ── */}
+        {onEnterHouse && (
+          <g style={{ cursor: 'pointer' }} onClick={onEnterHouse}>
+            {/* Invisible hit-rect covering the door across all building tiers */}
+            <rect x={374} y={326} width={52} height={52} fill="transparent"/>
+            {/* Subtle glow ring to hint interactivity */}
+            <motion.ellipse
+              cx={400} cy={374} rx={30} ry={8}
+              fill="#FFE080"
+              animate={{ opacity: [0, 0.18, 0], scale: [0.9, 1.1, 0.9] }}
+              transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut' }}
+              style={{ pointerEvents: 'none' }}
+            />
+          </g>
+        )}
 
         {/* ── State label ── */}
         <motion.text

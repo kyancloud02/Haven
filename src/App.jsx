@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import WorldStage, { ForegroundLayer } from './components/WorldStage'
+import InteriorStage from './components/InteriorStage'
 import CharacterSprite from './components/CharacterSprite'
 import VisitorSprite from './components/VisitorSprite'
 import VisitorModal from './components/VisitorModal'
@@ -99,6 +100,7 @@ export default function App() {
   const [accountOpen, setAccountOpen]       = useState(false)
   const [visitorModalOpen, setVisitorModalOpen] = useState(false)
   const [heirModalOpen, setHeirModalOpen]   = useState(false)
+  const [isIndoor, setIsIndoor]             = useState(false)
 
   // Auto-open the Heir modal exactly once when the milestone is first reached
   const prevHeirUnlocked = useRef(false)
@@ -130,11 +132,58 @@ export default function App() {
   return (
     <div className="relative w-full h-screen overflow-hidden bg-stone-950">
 
-      {/* ── Full-screen world scene ── */}
-      <WorldStage overrideHour={IS_DEV ? debugHour : undefined} housingTier={gameState.housingTier} isDamaged={isDamaged} />
+      {/* ── Scene: outdoor world or indoor interior ── */}
+      <AnimatePresence mode="wait">
+        {isIndoor ? (
+          <motion.div key="interior" className="absolute inset-0"
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            transition={{ duration: 0.5 }}>
+            <InteriorStage
+              onExit={() => setIsIndoor(false)}
+              timeState={effectiveTimeState}
+              leaderId={gameState.currentLeaderId}
+            />
+          </motion.div>
+        ) : (
+          <motion.div key="exterior" className="absolute inset-0"
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            transition={{ duration: 0.5 }}>
+            <WorldStage
+              overrideHour={IS_DEV ? debugHour : undefined}
+              housingTier={gameState.housingTier}
+              isDamaged={isDamaged}
+              onEnterHouse={() => setIsIndoor(true)}
+            />
+            {/* Outdoor characters */}
+            <div className="absolute inset-0 pointer-events-none">
+              {characters.map((hero, i) => (
+                <CharacterSprite
+                  key={hero.id}
+                  heroData={hero}
+                  gameState={gameState}
+                  updateState={updateState}
+                  spriteIndex={i}
+                  timeState={effectiveTimeState}
+                  totalCharacters={characters.length}
+                />
+              ))}
+              <AnimatePresence>
+                {currentVisitor && (
+                  <VisitorSprite
+                    key={currentVisitor.id}
+                    visitor={currentVisitor}
+                    onOpenModal={() => setVisitorModalOpen(true)}
+                  />
+                )}
+              </AnimatePresence>
+            </div>
+            <ForegroundLayer timeState={effectiveTimeState} />
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {/* ── HUD overlay ── */}
-      <div className="absolute inset-0 pointer-events-none">
+      {/* ── HUD overlay (always on top) ── */}
+      <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 10 }}>
 
         {/* Top-left: village name + citizens */}
         <div className="absolute top-6 left-6 pointer-events-auto">
@@ -256,33 +305,7 @@ export default function App() {
           </HudButton>
         </div>
 
-        {/* Characters — absolutely positioned, freely draggable */}
-        {characters.map((hero, i) => (
-          <CharacterSprite
-            key={hero.id}
-            heroData={hero}
-            gameState={gameState}
-            updateState={updateState}
-            spriteIndex={i}
-            timeState={effectiveTimeState}
-            totalCharacters={characters.length}
-          />
-        ))}
-
-        {/* Visitor */}
-        <AnimatePresence>
-          {currentVisitor && (
-            <VisitorSprite
-              key={currentVisitor.id}
-              visitor={currentVisitor}
-              onOpenModal={() => setVisitorModalOpen(true)}
-            />
-          )}
-        </AnimatePresence>
       </div>
-
-      {/* ── Foreground depth layer — overlaps characters ── */}
-      <ForegroundLayer timeState={effectiveTimeState} />
 
       {/* ── Sliding panels ── */}
       <AnimatePresence>

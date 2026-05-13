@@ -385,7 +385,7 @@ const BUILDINGS = [
 ]
 
 // ─── Component ─────────────────────────────────────────────────────────────────
-export default function WorldStage({ overrideHour, housingTier = 'Cardboard Box', isDamaged = false }) {
+export default function WorldStage({ overrideHour, housingTier = 'Cardboard Box', isDamaged = false, onEnterHouse }) {
   const realTimeState = useGameTime()
   const timeState = overrideHour !== undefined ? getTimeState(overrideHour) : realTimeState
   const T = THEMES[timeState]
@@ -490,6 +490,50 @@ export default function WorldStage({ overrideHour, housingTier = 'Cardboard Box'
             <ellipse cx={c.x+ 2*c.s}   cy={c.y+15*c.s}  rx={46*c.s} ry={ 9*c.s} fill="#C0D8EC" opacity={0.28} />
           </motion.g>
         ))}
+
+        {/* ── Floating islands (Islets style) ── */}
+        {/* Island 1 — left, mid-height */}
+        <motion.g
+          animate={{ opacity: timeState === 'AWAY' ? 0.93 : timeState === 'HOME' ? 0.50 : 0.14 }}
+          transition={EASE}
+        >
+          <ellipse cx={185} cy={163} rx={58} ry={20} fill="#9A8A70" />
+          <ellipse cx={170} cy={173} rx={42} ry={14} fill="white" opacity={0.62} />
+          <ellipse cx={202} cy={176} rx={30} ry={11} fill="white" opacity={0.52} />
+          <ellipse cx={183} cy={179} rx={18} ry={8}  fill="white" opacity={0.38} />
+          <ellipse cx={185} cy={148} rx={50} ry={12} fill="#8A7060" />
+          <ellipse cx={172} cy={136} rx={32} ry={19} fill="#5A9040" />
+          <ellipse cx={202} cy={133} rx={23} ry={16} fill="#6AAC4A" />
+          <ellipse cx={158} cy={141} rx={17} ry={13} fill="#4E7E35" />
+          <rect x={197} y={126} width={5} height={22} rx={2} fill="#7A5030" />
+          <ellipse cx={200} cy={121} rx={14} ry={12} fill="#5A9040" />
+        </motion.g>
+
+        {/* Island 2 — right, higher and smaller */}
+        <motion.g
+          animate={{ opacity: timeState === 'AWAY' ? 0.85 : timeState === 'HOME' ? 0.40 : 0.10 }}
+          transition={EASE}
+        >
+          <ellipse cx={580} cy={116} rx={44} ry={15} fill="#9A8A70" />
+          <ellipse cx={568} cy={124} rx={34} ry={11} fill="white" opacity={0.58} />
+          <ellipse cx={596} cy={128} rx={24} ry={9}  fill="white" opacity={0.48} />
+          <ellipse cx={580} cy={103} rx={38} ry={10} fill="#8A7060" />
+          <ellipse cx={572} cy={92}  rx={26} ry={16} fill="#5A9040" />
+          <ellipse cx={594} cy={89}  rx={18} ry={14} fill="#6AAC4A" />
+          <ellipse cx={560} cy={96}  rx={13} ry={10} fill="#4E7E35" />
+        </motion.g>
+
+        {/* Island 3 — distant center, small */}
+        <motion.g
+          animate={{ opacity: timeState === 'AWAY' ? 0.68 : timeState === 'HOME' ? 0.28 : 0.07 }}
+          transition={EASE}
+        >
+          <ellipse cx={370} cy={83}  rx={28} ry={10} fill="#A09080" />
+          <ellipse cx={370} cy={91}  rx={22} ry={8}  fill="white" opacity={0.54} />
+          <ellipse cx={370} cy={73}  rx={22} ry={9}  fill="#8A7865" />
+          <ellipse cx={366} cy={62}  rx={17} ry={13} fill="#5A9040" opacity={0.9} />
+          <ellipse cx={379} cy={60}  rx={12} ry={10} fill="#6AAC4A" opacity={0.85} />
+        </motion.g>
 
         {/* ── Far hills ── */}
         <motion.path
@@ -671,6 +715,22 @@ export default function WorldStage({ overrideHour, housingTier = 'Cardboard Box'
           style={{ pointerEvents: 'none' }}
         />
 
+        {/* ── Clickable door (enter house) ── */}
+        {onEnterHouse && (
+          <g style={{ cursor: 'pointer' }} onClick={onEnterHouse}>
+            {/* Invisible hit-rect covering the door across all building tiers */}
+            <rect x={374} y={326} width={52} height={52} fill="transparent"/>
+            {/* Subtle glow ring to hint interactivity */}
+            <motion.ellipse
+              cx={400} cy={374} rx={30} ry={8}
+              fill="#FFE080"
+              animate={{ opacity: [0, 0.18, 0], scale: [0.9, 1.1, 0.9] }}
+              transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut' }}
+              style={{ pointerEvents: 'none' }}
+            />
+          </g>
+        )}
+
         {/* ── State label ── */}
         <motion.text
           x={18} y={410}
@@ -684,9 +744,80 @@ export default function WorldStage({ overrideHour, housingTier = 'Cardboard Box'
         </motion.text>
       </svg>
 
+    </div>
+  )
+}
+
+// ─── Foreground layer — overlaps characters for depth ─────────────────────────
+export function ForegroundLayer({ timeState }) {
+  const T = THEMES[timeState] ?? THEMES.AWAY
+
+  return (
+    <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 2 }}>
+      <svg
+        viewBox="0 0 800 420"
+        preserveAspectRatio="xMidYMid slice"
+        className="absolute inset-0 w-full h-full"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        {/* ── Left foreground foliage ── */}
+        <motion.path
+          d="M-20,420 C20,370 72,330 108,318 C82,342 46,370 5,420 Z"
+          animate={{ fill: T.canopy1 }} transition={EASE} opacity={0.94}
+        />
+        <motion.path
+          d="M-35,392 C18,332 78,292 122,278 C94,307 52,342 8,394 Z"
+          animate={{ fill: T.canopy1s }} transition={EASE} opacity={0.88}
+        />
+        <motion.path
+          d="M2,348 C34,302 86,272 118,262 C94,282 60,314 24,352 Z"
+          animate={{ fill: T.canopy1 }} transition={EASE} opacity={0.78}
+        />
+        <motion.path
+          d="M-18,420 C6,402 38,386 60,378 C42,396 16,412 -8,420 Z"
+          animate={{ fill: T.canopy1s }} transition={EASE} opacity={0.96}
+        />
+
+        {/* ── Right foreground foliage ── */}
+        <motion.path
+          d="M820,420 C780,370 728,330 692,318 C718,342 754,370 795,420 Z"
+          animate={{ fill: T.canopy2 }} transition={EASE} opacity={0.94}
+        />
+        <motion.path
+          d="M835,392 C782,332 722,292 678,278 C706,307 748,342 792,394 Z"
+          animate={{ fill: T.canopy2s }} transition={EASE} opacity={0.88}
+        />
+        <motion.path
+          d="M798,348 C766,302 714,272 682,262 C706,282 740,314 776,352 Z"
+          animate={{ fill: T.canopy2 }} transition={EASE} opacity={0.78}
+        />
+        <motion.path
+          d="M818,420 C794,402 762,386 740,378 C758,396 784,412 808,420 Z"
+          animate={{ fill: T.canopy2s }} transition={EASE} opacity={0.96}
+        />
+
+        {/* ── Foreground rocks ── */}
+        <motion.path
+          d="M0,420 C10,412 28,409 42,414 C34,419 16,421 0,420 Z"
+          animate={{ fill: T.groundNear }} transition={EASE}
+        />
+        <motion.path
+          d="M35,418 C50,410 70,408 82,414 C74,420 52,421 35,420 Z"
+          animate={{ fill: T.groundFront }} transition={EASE}
+        />
+        <motion.path
+          d="M718,418 C730,410 750,408 762,414 C754,420 732,421 718,420 Z"
+          animate={{ fill: T.groundFront }} transition={EASE}
+        />
+        <motion.path
+          d="M758,420 C770,412 788,409 800,413 L800,420 Z"
+          animate={{ fill: T.groundNear }} transition={EASE}
+        />
+      </svg>
+
       {/* ── Breathing vignette ── */}
       <motion.div
-        className="absolute inset-0 pointer-events-none"
+        className="absolute inset-0"
         style={{ boxShadow: 'inset 0 0 120px rgba(0,0,0,0.55)' }}
         animate={{ opacity: [0.7, 1, 0.7] }}
         transition={{ duration: 7, repeat: Infinity, ease: 'easeInOut' }}

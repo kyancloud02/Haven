@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { motion, AnimatePresence, useMotionValue, animate } from 'framer-motion'
+import { motion, AnimatePresence, useMotionValue, useTransform, animate } from 'framer-motion'
 import { CHARACTER_ACCENT } from './CharacterSprites'
 import SpriteCanvas from './SpriteCanvas'
 import { useBehavior } from '../hooks/useBehavior'
@@ -220,6 +220,17 @@ export default function CharacterSprite({
   const x     = useMotionValue(calcInitX(spriteIndex, totalCharacters))
   const dragY = useMotionValue(0)
 
+  // Walkable path: characters rise toward screen center (appear to walk into scene depth)
+  const screenW    = window.innerWidth
+  const screenH    = window.innerHeight
+  const PATH_ARC   = 52   // px higher at center vs screen edges
+  const baseTopPx  = screenH * 0.91 - 96  // 96 ≈ rendered sprite height
+  const pathTopPx  = useTransform(
+    x,
+    [0, screenW * 0.5, screenW],
+    [baseTopPx, baseTopPx - PATH_ARC, baseTopPx],
+  )
+
   const { isOffscreen, walkDir, onDragStart: behStart, onDragEnd: behEnd } = useBehavior({
     x, spriteIndex, totalCharacters, isDragging, isGuard,
   })
@@ -275,7 +286,7 @@ export default function CharacterSprite({
         style={{
           position:      'absolute',
           left:          0,
-          bottom:        '9%',
+          top:           pathTopPx,
           x,
           y:             dragY,
           cursor:        dragging ? 'grabbing' : 'grab',

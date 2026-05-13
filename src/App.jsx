@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
-import WorldStage from './components/WorldStage'
+import WorldStage, { ForegroundLayer } from './components/WorldStage'
 import CharacterSprite from './components/CharacterSprite'
 import VisitorSprite from './components/VisitorSprite'
 import VisitorModal from './components/VisitorModal'
@@ -280,6 +280,9 @@ export default function App() {
           )}
         </AnimatePresence>
       </div>
+
+      {/* ── Foreground depth layer — overlaps characters ── */}
+      <ForegroundLayer timeState={effectiveTimeState} />
 
       {/* ── Sliding panels ── */}
       <AnimatePresence>

@@ -1,9 +1,13 @@
 /**
- * Procedural sprite sheet generator — Islets-inspired soft art style.
+ * Procedural sprite sheet generator — Islets hand-drawn style.
  *
- * All characters share the round-creature silhouette (soft outlines, circular
- * eyes, tiny legs, watercolour highlights) but each has their own clothing
- * silhouette, colour palette, and head accessory matching their source character.
+ * Each character is a tall rounded-rectangle bird/creature body with:
+ *   • ONE large circular eye with white sclera + dark pupil
+ *   • A prominent pointed beak on the side (bird-like silhouette)
+ *   • A dark collar band separating the head from the outfit
+ *   • Character-specific clothing that covers the lower body
+ *   • Thin stick-like legs with flat feet
+ *   • Thick 2px outlines everywhere (hand-drawn feel)
  *
  * Sheet: 512×448 px  (8 cols × 7 rows, 64×64 per frame)
  * Row 0  walk_down  (front, 4 frames)
@@ -30,395 +34,356 @@ export const ANIM_META = {
 }
 
 // ── Character definition schema ───────────────────────────────────────────────
-//
-// To add a new character, call registerCharacter(id, def) anywhere before
-// generateSpriteSheet is first called for that id.
-//
-// Required fields:
-//   body / bodyD      — creature body fill + shadow colour
-//   head / headD      — head fill + shadow colour
-//   eyes              — pupil colour
-//   ears              — ear fill colour
-//   outfit / outfitD  — primary clothing colour + shadow
-//   trim              — accent / decoration colour (gold, leather, etc.)
-//   belt              — belt colour, or null for none
-//   feet / feetD      — leg/foot fill + shadow colour
-//   special           — head accessory (see SPECIALS below)
-//   style             — outfit silhouette (see STYLES below)
-//
-// Optional:
-//   plump: true       — widens body ovals (e.g. Winnie-the-Pooh)
-//
-// Available style values:
-export const STYLES = /** @type {const} */ ([
-  'dress',          // bell-shaped flowing skirt (Elf Princess)
-  'armour',         // chest-plate + pauldrons (Mulan)
-  'battle_robe',    // round robe + sash belt (Sun Wukong)
-  'detective_coat', // long lapelled coat + waistcoat (Sherlock)
-  'hooded_tunic',   // tunic + belt + back quiver (Robin Hood)
-  'red_shirt',      // short crop-shirt, belly visible (Winnie-the-Pooh)
-])
+export const STYLES = [
+  'dress', 'armour', 'battle_robe', 'detective_coat', 'hooded_tunic', 'red_shirt',
+]
+export const SPECIALS = [
+  'elf_ears', 'topknot', 'golden_headband', 'deerstalker', 'green_hood', 'bear_ears',
+]
 
-// Available special (head accessory) values:
-export const SPECIALS = /** @type {const} */ ([
-  'elf_crown',       // gold zigzag crown + pointed elf ears
-  'topknot',         // dark hair bun + hair pin
-  'golden_headband', // gold band across forehead + coloured jewel
-  'deerstalker',     // flat detective cap with peaks
-  'green_hood',      // pointed hood merging into outfit
-  'bear_ears',       // round bear ears with pink inner
-])
-
-// ── Built-in character registry ───────────────────────────────────────────────
-
+// ── Character registry ─────────────────────────────────────────────────────────
 const CHARS = {
   elf_princess: {
-    // Lavender cat-like creature, pink bell-shaped dress, gold crown, elf ears
-    body:    '#C4B0E0', bodyD:  '#A890C8',
-    head:    '#D0BCEC', headD:  '#B49CD0',
-    eyes:    '#3028A8',
-    ears:    '#F0A8C8',                  // pink pointed ears
-    outfit:  '#D05888', outfitD: '#A83C68', // rose-pink flowing dress
-    trim:    '#F0D840',                  // gold trim
-    belt:    null,
-    feet:    '#9870C8', feetD:  '#7050A8',
-    special: 'elf_crown',
+    // Soft pale-blue creature, rose bell-dress, gold crown, pointed elf ears
+    body:    '#C0B8E0', bodyD:  '#A098C8',   // pale lavender creature color
+    beak:    '#6858A8', beakD:  '#504090',   // plum-toned beak
+    eyes:    '#3020A8',
+    outfit:  '#C85880', outfitD: '#A03860',  // rose-pink dress
+    trim:    '#F0D840',
+    collar:  '#8860B8',
+    feet:    '#7050A8', feetD:  '#503888',
+    special: 'elf_ears',
     style:   'dress',
   },
-
   warrior_mulan: {
-    // Warm tan creature, red-and-gold Chinese armour, dark topknot
-    body:    '#E2B880', bodyD:  '#C09050',
-    head:    '#ECC890', headD:  '#CAAA60',
-    eyes:    '#1A0808',
-    ears:    '#D8A060',
-    outfit:  '#C02828', outfitD: '#901818', // red armour
-    trim:    '#F0C040',                  // gold trim
-    belt:    '#301008',
+    // Warm tan creature, red-gold armour, dark topknot
+    body:    '#D8A870', bodyD:  '#B88048',
+    beak:    '#3A2010', beakD:  '#201008',
+    eyes:    '#180808',
+    outfit:  '#C02828', outfitD: '#901818',
+    trim:    '#F0C040',
+    collar:  '#501808',
     feet:    '#3A1808', feetD:  '#201008',
     special: 'topknot',
     style:   'armour',
   },
-
   sun_wukong: {
-    // Golden-amber creature, orange battle-robe, golden headband, staff
+    // Golden creature, orange battle-robe, gold headband
     body:    '#D8A840', bodyD:  '#B88020',
-    head:    '#E8B848', headD:  '#C89828',
-    eyes:    '#2A1008',
-    ears:    '#C89030',
-    outfit:  '#D07028', outfitD: '#A85010', // burnt-orange robe
-    trim:    '#F8E040',                  // gold sash
-    belt:    '#C05010',
-    feet:    '#7A4010', feetD:  '#522808',
+    beak:    '#6A3808', beakD:  '#3A2008',
+    eyes:    '#281008',
+    outfit:  '#C87020', outfitD: '#9A5010',
+    trim:    '#F8E040',
+    collar:  '#904010',
+    feet:    '#7A4010', feetD:  '#502808',
     special: 'golden_headband',
     style:   'battle_robe',
   },
-
   sherlock_holmes: {
-    // Slate-blue creature, long dark detective coat, deerstalker, pipe
-    body:    '#8898A8', bodyD:  '#607080',
-    head:    '#98A8B8', headD:  '#708090',
+    // Slate-blue creature, dark detective coat, deerstalker cap
+    body:    '#7888A0', bodyD:  '#586878',
+    beak:    '#D0A870', beakD:  '#A88048',   // lighter cream beak (contrast)
     eyes:    '#181010',
-    ears:    '#8898A8',
-    outfit:  '#3A4050', outfitD: '#282C38', // charcoal coat
-    trim:    '#A89858',                  // aged-brass buttons
-    belt:    '#282030',
+    outfit:  '#3A4050', outfitD: '#262C38',
+    trim:    '#A89858',
+    collar:  '#282C38',
     feet:    '#202028', feetD:  '#141018',
     special: 'deerstalker',
     style:   'detective_coat',
   },
-
   robin_hood: {
-    // Forest-green creature, green hooded tunic, brown belt + quiver
+    // Olive-green creature, forest hooded tunic, leather belt
     body:    '#7A9848', bodyD:  '#5A7830',
-    head:    '#8CAA58', headD:  '#6A8838',
+    beak:    '#604020', beakD:  '#3A2810',
     eyes:    '#141008',
-    ears:    '#7A9848',
-    outfit:  '#4A7020', outfitD: '#305010', // forest-green tunic
-    trim:    '#9A6030',                  // brown leather
-    belt:    '#7A4818',
+    outfit:  '#4A6820', outfitD: '#305010',
+    trim:    '#9A6030',
+    collar:  '#385018',
     feet:    '#3A2010', feetD:  '#241408',
     special: 'green_hood',
     style:   'hooded_tunic',
   },
-
   winnie_the_pooh: {
-    // Honey-yellow round bear, tiny red crop-shirt, bear ears, honey pot satchel
-    body:    '#EAC850', bodyD:  '#C8A030',
-    head:    '#F2D860', headD:  '#D0B038',
+    // Honey-yellow round bear, red crop-shirt, honey pot, bear ears
+    body:    '#E8C850', bodyD:  '#C8A030',
+    beak:    '#8A5820', beakD:  '#5A3810',   // brown snout/nose
     eyes:    '#180808',
-    ears:    '#EAC850',
-    outfit:  '#C82020', outfitD: '#A01010', // red shirt
+    outfit:  '#C82020', outfitD: '#A01010',
     trim:    '#F0B030',
-    belt:    null,
+    collar:  '#A83020',
     feet:    '#8A5818', feetD:  '#5A3810',
     special: 'bear_ears',
     style:   'red_shirt',
-    plump:   true,                       // wider body
+    plump:   true,
   },
 }
 
-// ── Public character registration API ─────────────────────────────────────────
-
-/**
- * Register a new character so generateSpriteSheet can render it.
- *
- * @param {string} id       - Must match the character's id in characters.json
- * @param {object} def      - Character definition (see schema comment above)
- *
- * Example:
- *   registerCharacter('merlin', {
- *     body: '#8070B0', bodyD: '#604890',
- *     head: '#9080C0', headD: '#705898',
- *     eyes: '#201840',
- *     ears: '#8070B0',
- *     outfit: '#304898', outfitD: '#1C2D70',
- *     trim: '#C8A040',
- *     belt: '#483018',
- *     feet: '#302060', feetD: '#1C1040',
- *     special: 'deerstalker',
- *     style: 'detective_coat',
- *   })
- */
 export function registerCharacter(id, def) {
-  if (!STYLES.includes(def.style)) {
-    console.warn(`[spriteGen] Unknown style "${def.style}" for character "${id}". Falling back to "dress".`)
-    def = { ...def, style: 'dress' }
-  }
-  if (def.special && !SPECIALS.includes(def.special)) {
-    console.warn(`[spriteGen] Unknown special "${def.special}" for character "${id}". Accessory will be skipped.`)
-    def = { ...def, special: null }
-  }
+  if (!STYLES.includes(def.style)) { def = { ...def, style: 'dress' } }
+  if (def.special && !SPECIALS.includes(def.special)) { def = { ...def, special: null } }
   CHARS[id] = def
 }
 
-/**
- * Returns a fully-populated character definition with sensible defaults filled
- * in for any missing optional fields. Useful as a starting point when calling
- * registerCharacter.
- *
- * @param {Partial<object>} overrides
- * @returns {object}
- */
 export function createCharDef(overrides = {}) {
   return {
-    body:    '#A09898', bodyD:  '#807070',
-    head:    '#B0A8A8', headD:  '#907878',
-    eyes:    '#201818',
-    ears:    '#A09898',
-    outfit:  '#6870A0', outfitD: '#485080',
-    trim:    '#D0C060',
-    belt:    '#503820',
-    feet:    '#3A2818', feetD:  '#221808',
-    special: null,
-    style:   'dress',
-    plump:   false,
+    body: '#8898A8', bodyD: '#607080',
+    beak: '#3A3020', beakD: '#201808',
+    eyes: '#181010',
+    outfit: '#4A5060', outfitD: '#303540',
+    trim: '#C8A840', collar: '#303038',
+    feet: '#282030', feetD: '#181020',
+    special: null, style: 'dress', plump: false,
     ...overrides,
   }
 }
 
 // ── Walk cycle tables ──────────────────────────────────────────────────────────
+const WALK8 = [[-3,2],[-2,3],[-1,2],[0,1],[3,-2],[2,-3],[1,-2],[0,-1]]
+const WALK4 = [[-2,2],[0,3],[2,-2],[0,-3]]
 
-const WALK8 = [
-  [-3, 2], [-2, 3], [-1, 2], [0, 1],
-  [ 3,-2], [ 2,-3], [ 1,-2], [0,-1],
-]
-const WALK4 = [[-2, 2], [0, 3], [2, -2], [0, -3]]
+// ── Canvas drawing helpers ─────────────────────────────────────────────────────
 
-// ── Canvas helpers ─────────────────────────────────────────────────────────────
-
-const OL = '#10080C'  // universal outline — dark warm near-black
+const OL = '#0C0808'  // thick warm-black outline (matches Islets look)
 
 function circ(ctx, cx, cy, r, color) {
   ctx.fillStyle = color
-  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill()
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.fill()
 }
-
 function oval(ctx, cx, cy, rx, ry, color) {
   ctx.fillStyle = color
-  ctx.beginPath(); ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI * 2); ctx.fill()
+  ctx.beginPath(); ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI*2); ctx.fill()
 }
-
 function rrect(ctx, x, y, w, h, r, color) {
-  ctx.fillStyle = color
-  ctx.beginPath()
+  ctx.fillStyle = color; ctx.beginPath()
   if (ctx.roundRect) ctx.roundRect(x, y, w, h, r); else ctx.rect(x, y, w, h)
   ctx.fill()
 }
-
-function line(ctx, x1, y1, x2, y2, color, width = 1) {
-  ctx.strokeStyle = color; ctx.lineWidth = width; ctx.lineCap = 'round'
-  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke()
+function line(ctx, x1, y1, x2, y2, color, lw = 1) {
+  ctx.strokeStyle = color; ctx.lineWidth = lw; ctx.lineCap = 'round'
+  ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke()
+}
+function rrectStroke(ctx, x, y, w, h, r, fill, sw = 2) {
+  ctx.fillStyle = fill; ctx.strokeStyle = OL; ctx.lineWidth = sw
+  ctx.beginPath()
+  if (ctx.roundRect) ctx.roundRect(x, y, w, h, r); else ctx.rect(x, y, w, h)
+  ctx.fill(); ctx.stroke()
+}
+function circStroke(ctx, cx, cy, r, fill, sw = 2) {
+  ctx.fillStyle = fill; ctx.strokeStyle = OL; ctx.lineWidth = sw
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.fill(); ctx.stroke()
+}
+function ovalStroke(ctx, cx, cy, rx, ry, fill, sw = 2) {
+  ctx.fillStyle = fill; ctx.strokeStyle = OL; ctx.lineWidth = sw
+  ctx.beginPath(); ctx.ellipse(cx, cy, rx, ry, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke()
 }
 
-// Circle with 1.5px outline
-function circO(ctx, cx, cy, r, fill) {
-  circ(ctx, cx, cy, r + 1.5, OL); circ(ctx, cx, cy, r, fill)
+// Large expressive eye: white sclera + dark pupil + gleam
+function drawEye(ctx, cx, cy, r, pupilColor) {
+  ctx.save()
+  // White sclera
+  ctx.fillStyle = '#FFFFFF'; ctx.strokeStyle = OL; ctx.lineWidth = 2
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2); ctx.fill(); ctx.stroke()
+  // Dark pupil (slightly below centre)
+  ctx.fillStyle = pupilColor
+  ctx.beginPath(); ctx.arc(cx, cy + r * 0.15, r * 0.55, 0, Math.PI*2); ctx.fill()
+  // Specular gleam
+  ctx.fillStyle = 'rgba(255,255,255,0.9)'
+  ctx.beginPath(); ctx.arc(cx - r*0.28, cy - r*0.28, r*0.20, 0, Math.PI*2); ctx.fill()
+  ctx.restore()
+}
+function drawEyeBlink(ctx, cx, cy, r) {
+  ctx.save()
+  ctx.strokeStyle = OL; ctx.lineWidth = 2.2; ctx.lineCap = 'round'
+  ctx.beginPath(); ctx.arc(cx, cy, r, Math.PI * 1.12, Math.PI * 1.88); ctx.stroke()
+  ctx.restore()
 }
 
-// Oval with 1.5px outline
-function ovalO(ctx, cx, cy, rx, ry, fill) {
-  oval(ctx, cx, cy, rx + 1.5, ry + 1.5, OL); oval(ctx, cx, cy, rx, ry, fill)
+// ── Core creature body ─────────────────────────────────────────────────────────
+
+// Draws the tall rounded-rectangle creature silhouette (head + torso merged)
+function drawCreatureBody(ctx, char, cx, y) {
+  const bw = char.plump ? 26 : 22
+  const bh = 42
+  const x  = cx - bw/2
+
+  // Body fill + thick outline
+  ctx.fillStyle   = char.body
+  ctx.strokeStyle = OL; ctx.lineWidth = 2.2
+  ctx.beginPath()
+  if (ctx.roundRect) ctx.roundRect(x, y + 6, bw, bh, [10, 10, 5, 5])
+  else ctx.rect(x, y + 6, bw, bh)
+  ctx.fill(); ctx.stroke()
+
+  // Subtle side-shadow on body (painterly depth)
+  const grad = ctx.createLinearGradient(x, 0, x + bw, 0)
+  grad.addColorStop(0,    'rgba(0,0,0,0.18)')
+  grad.addColorStop(0.18, 'rgba(0,0,0,0)')
+  grad.addColorStop(0.82, 'rgba(0,0,0,0)')
+  grad.addColorStop(1,    'rgba(0,0,0,0.18)')
+  ctx.fillStyle = grad
+  ctx.beginPath()
+  if (ctx.roundRect) ctx.roundRect(x, y + 6, bw, bh, [10, 10, 5, 5])
+  else ctx.rect(x, y + 6, bw, bh)
+  ctx.fill()
+
+  // Soft top highlight
+  ctx.globalAlpha = 0.14
+  oval(ctx, cx, y + 12, bw * 0.35, 4, '#FFFFFF')
+  ctx.globalAlpha = 1.0
 }
 
-function rrectO(ctx, x, y, w, h, r, fill) {
-  rrect(ctx, x - 1.5, y - 1.5, w + 3, h + 3, r + 1, OL)
-  rrect(ctx, x, y, w, h, r, fill)
+// Prominent beak — side profile (dir: -1=left, 1=right) or front (dir:0)
+function drawBeak(ctx, char, cx, y, dir, open) {
+  ctx.strokeStyle = OL; ctx.lineWidth = 1.8
+
+  if (dir === 0) {
+    // Front-facing: short downward beak visible at bottom of head
+    const by = y + 25
+    ctx.fillStyle = char.beak
+    ctx.beginPath()
+    ctx.moveTo(cx - 5, by); ctx.lineTo(cx + 5, by); ctx.lineTo(cx, by + 8)
+    ctx.closePath(); ctx.fill(); ctx.stroke()
+    if (open) {
+      ctx.fillStyle = '#301010'
+      ctx.beginPath(); ctx.ellipse(cx, by + 4, 3, 2, 0, 0, Math.PI); ctx.fill()
+    }
+  } else {
+    // Side profile: large triangular beak
+    const faceX  = cx + dir * 11   // base of beak (edge of face)
+    const tipX   = cx + dir * 25   // tip of beak
+    const midY   = y + 18          // vertical midline
+    const topY   = midY - 6
+    const botY   = open ? midY + 10 : midY + 6
+
+    // Lower jaw (if open, drops down)
+    if (open) {
+      ctx.fillStyle = char.bodyD
+      ctx.beginPath()
+      ctx.moveTo(faceX, midY + 4)
+      ctx.lineTo(tipX - dir*6, midY + 7)
+      ctx.lineTo(faceX, botY)
+      ctx.closePath(); ctx.fill(); ctx.stroke()
+    }
+
+    // Upper beak
+    ctx.fillStyle = char.beak
+    ctx.beginPath()
+    ctx.moveTo(faceX, topY)
+    ctx.lineTo(tipX, midY - (open ? 3 : 0))
+    ctx.lineTo(faceX, midY + (open ? 2 : 4))
+    ctx.closePath(); ctx.fill(); ctx.stroke()
+
+    // Upper beak highlight edge
+    ctx.globalAlpha = 0.22; ctx.strokeStyle = '#FFFFFF'; ctx.lineWidth = 0.8
+    ctx.beginPath(); ctx.moveTo(faceX, topY + 1); ctx.lineTo(tipX - dir*3, midY - (open?4:1)); ctx.stroke()
+    ctx.globalAlpha = 1.0; ctx.strokeStyle = OL
+  }
 }
 
-// ── Outfit drawing ─────────────────────────────────────────────────────────────
+// Dark collar band (neck marker between head and outfit)
+function drawCollar(ctx, char, cx, y) {
+  const cw = char.plump ? 27 : 23
+  rrectStroke(ctx, cx - cw/2, y + 26, cw, 5, 2, char.collar, 1.5)
+}
+
+// ── Outfit drawing (covers body from collar down) ──────────────────────────────
 
 function drawOutfitFront(ctx, char, cx, y) {
   switch (char.style) {
 
     case 'dress': {
-      // Bell-shaped flowing dress — narrow at waist, flares out at hem
-      // Waist/bodice
-      ovalO(ctx, cx, y + 32, 9, 6.5, char.outfit)
-      // Flared skirt
-      ovalO(ctx, cx, y + 43, 14, 10, char.outfit)
-      // Skirt fold shading
-      ctx.globalAlpha = 0.30
-      oval(ctx, cx - 5, y + 42, 2.5, 7, char.outfitD)
-      oval(ctx, cx + 5, y + 42, 2.5, 7, char.outfitD)
+      // Bell-shaped flared skirt
+      ctx.fillStyle = char.outfit; ctx.strokeStyle = OL; ctx.lineWidth = 2
+      ctx.beginPath()
+      ctx.moveTo(cx - 10, y + 30)
+      ctx.lineTo(cx + 10, y + 30)
+      ctx.lineTo(cx + 16, y + 52)
+      ctx.lineTo(cx - 16, y + 52)
+      ctx.closePath(); ctx.fill(); ctx.stroke()
+      // Fold shading
+      ctx.globalAlpha = 0.22
+      ctx.fillStyle = char.outfitD
+      ctx.beginPath(); ctx.moveTo(cx-16,y+52); ctx.lineTo(cx-9,y+34); ctx.lineTo(cx-6,y+52); ctx.closePath(); ctx.fill()
+      ctx.beginPath(); ctx.moveTo(cx+6,y+52);  ctx.lineTo(cx+9,y+34); ctx.lineTo(cx+16,y+52); ctx.closePath(); ctx.fill()
       ctx.globalAlpha = 1.0
-      // Gold collar trim
-      ovalO(ctx, cx, y + 27, 8, 3.5, char.trim)
-      // Bodice jewel
-      circ(ctx, cx, y + 32, 2, char.trim)
-      // Highlight
-      ctx.globalAlpha = 0.20
-      oval(ctx, cx - 3, y + 34, 4, 6, '#FFFFFF')
-      ctx.globalAlpha = 1.0
+      // Gold waist trim
+      rrectStroke(ctx, cx - 10, y + 30, 20, 3, 1, char.trim, 1)
+      // Bodice gem
+      circStroke(ctx, cx, y + 36, 2.5, char.trim, 1)
       break
     }
 
     case 'armour': {
-      // Red chest-plate with gold trim + pauldrons
-      // Under-layer
-      ovalO(ctx, cx, y + 40, 11, 9, char.outfitD)
-      // Chest plate
-      rrectO(ctx, cx - 10, y + 27, 20, 16, 3, char.outfit)
-      // Gold horizontal lines on plate
-      line(ctx, cx - 9, y + 30, cx + 9, y + 30, char.trim, 1.2)
-      line(ctx, cx - 9, y + 36, cx + 9, y + 36, char.trim, 1.2)
+      // Red chest-plate, lower skirt
+      rrectStroke(ctx, cx - 12, y + 30, 24, 18, 3, char.outfit)
+      // Gold trim lines
+      line(ctx, cx-11, y+33, cx+11, y+33, char.trim, 1.5)
+      line(ctx, cx-11, y+40, cx+11, y+40, char.trim, 1.5)
       // Centre seam
-      line(ctx, cx, y + 28, cx, y + 42, char.outfitD, 1)
+      line(ctx, cx, y+31, cx, y+47, char.outfitD, 1)
       // Pauldrons
-      ovalO(ctx, cx - 13, y + 29, 5.5, 4, char.outfit)
-      ovalO(ctx, cx + 13, y + 29, 5.5, 4, char.outfit)
-      line(ctx, cx - 17, y + 27, cx - 9, y + 27, char.trim, 1)
-      line(ctx, cx + 9,  y + 27, cx + 17, y + 27, char.trim, 1)
-      // Lower skirt
-      ovalO(ctx, cx, y + 48, 10, 5.5, char.outfitD)
+      ovalStroke(ctx, cx-14, y+32, 5.5, 3.5, char.outfit)
+      ovalStroke(ctx, cx+14, y+32, 5.5, 3.5, char.outfit)
+      // Lower skirting
+      rrectStroke(ctx, cx-11, y+47, 22, 6, 2, char.outfitD, 1.5)
       // Plate highlight
-      ctx.globalAlpha = 0.18
-      oval(ctx, cx - 4, y + 29, 4, 5, '#FFFFFF')
-      ctx.globalAlpha = 1.0
+      ctx.globalAlpha = 0.15; oval(ctx, cx-3, y+32, 4, 6, '#FFFFFF'); ctx.globalAlpha = 1.0
       break
     }
 
     case 'battle_robe': {
-      // Round flowing orange robe, wide gold sash belt
-      ovalO(ctx, cx, y + 40, 13, 12, char.outfit)
-      // Robe fold lines
-      ctx.globalAlpha = 0.28
-      oval(ctx, cx - 7, y + 38, 2.5, 7, char.outfitD)
-      oval(ctx, cx + 7, y + 38, 2.5, 7, char.outfitD)
-      ctx.globalAlpha = 1.0
-      // Gold sash belt across middle
-      rrectO(ctx, cx - 12, y + 36, 24, 5, 2, char.trim)
-      // Collar knot
-      circO(ctx, cx, y + 28, 4, char.trim)
-      // Robe highlight
-      ctx.globalAlpha = 0.20
-      oval(ctx, cx - 4, y + 32, 5, 6, '#FFFFFF')
+      // Round flowing robe
+      ctx.fillStyle = char.outfit; ctx.strokeStyle = OL; ctx.lineWidth = 2
+      ctx.beginPath()
+      ctx.moveTo(cx-10, y+30); ctx.lineTo(cx+10, y+30)
+      ctx.quadraticCurveTo(cx+15, y+42, cx+13, y+52)
+      ctx.lineTo(cx-13, y+52)
+      ctx.quadraticCurveTo(cx-15, y+42, cx-10, y+30)
+      ctx.closePath(); ctx.fill(); ctx.stroke()
+      // Gold sash
+      rrectStroke(ctx, cx-13, y+40, 26, 5, 2, char.trim, 1.5)
+      // Fold shadows
+      ctx.globalAlpha = 0.20; ctx.fillStyle = char.outfitD
+      ctx.beginPath(); ctx.moveTo(cx-13,y+42); ctx.lineTo(cx-8,y+30); ctx.lineTo(cx-5,y+52); ctx.closePath(); ctx.fill()
+      ctx.beginPath(); ctx.moveTo(cx+13,y+42); ctx.lineTo(cx+8,y+30); ctx.lineTo(cx+5,y+52); ctx.closePath(); ctx.fill()
       ctx.globalAlpha = 1.0
       break
     }
 
     case 'detective_coat': {
-      // Long dark charcoal coat with tan waistcoat strip + buttons
-      ovalO(ctx, cx, y + 42, 12, 11, char.outfit)
-      // Lapels (lighter inner triangles)
-      ctx.fillStyle = '#505868'
-      ctx.beginPath()
-      ctx.moveTo(cx,     y + 28)
-      ctx.lineTo(cx - 7, y + 38)
-      ctx.lineTo(cx,     y + 38)
-      ctx.closePath(); ctx.fill()
-      ctx.beginPath()
-      ctx.moveTo(cx,     y + 28)
-      ctx.lineTo(cx + 7, y + 38)
-      ctx.lineTo(cx,     y + 38)
-      ctx.closePath(); ctx.fill()
+      // Charcoal coat with lapels + waistcoat strip
+      rrectStroke(ctx, cx-12, y+30, 24, 24, 2, char.outfit)
+      // Lapels
+      ctx.fillStyle = '#505060'
+      ctx.beginPath(); ctx.moveTo(cx,y+30); ctx.lineTo(cx-9,y+42); ctx.lineTo(cx,y+42); ctx.closePath(); ctx.fill()
+      ctx.beginPath(); ctx.moveTo(cx,y+30); ctx.lineTo(cx+9,y+42); ctx.lineTo(cx,y+42); ctx.closePath(); ctx.fill()
       // Waistcoat strip
       ctx.fillStyle = '#706848'
-      ctx.beginPath()
-      ctx.moveTo(cx - 3, y + 28)
-      ctx.lineTo(cx + 3, y + 28)
-      ctx.lineTo(cx + 2, y + 46)
-      ctx.lineTo(cx - 2, y + 46)
-      ctx.closePath(); ctx.fill()
+      ctx.beginPath(); ctx.rect(cx-3, y+30, 6, 22); ctx.fill()
       // Buttons
-      for (let i = 0; i < 3; i++) circ(ctx, cx, y + 31 + i * 5, 1.2, char.trim)
-      // Coat hem fold
-      ctx.globalAlpha = 0.25
-      oval(ctx, cx - 8, y + 43, 2, 5, OL)
-      oval(ctx, cx + 8, y + 43, 2, 5, OL)
-      ctx.globalAlpha = 1.0
+      for (let i=0; i<3; i++) circStroke(ctx, cx, y+33+i*6, 1.2, char.trim, 1)
       break
     }
 
     case 'hooded_tunic': {
-      // Forest-green body, brown belt, hood drape
-      ovalO(ctx, cx, y + 40, 12, 11, char.outfit)
-      // Brown leather belt
-      rrectO(ctx, cx - 11, y + 37, 22, 4, 2, char.trim)
-      // Belt buckle
-      rrectO(ctx, cx - 2, y + 36, 4, 5, 1, '#D8C060')
-      // Tunic fold
-      ctx.globalAlpha = 0.25
-      oval(ctx, cx - 6, y + 38, 2, 6, char.outfitD)
-      oval(ctx, cx + 6, y + 38, 2, 6, char.outfitD)
-      ctx.globalAlpha = 1.0
-      // Tunic highlight
-      ctx.globalAlpha = 0.18
-      oval(ctx, cx - 4, y + 32, 4, 6, '#FFFFFF')
-      ctx.globalAlpha = 1.0
-      // Hood front drape over shoulders
-      ctx.fillStyle = char.outfitD
-      ctx.beginPath()
-      ctx.moveTo(cx - 14, y + 30)
-      ctx.quadraticCurveTo(cx - 13, y + 40, cx - 10, y + 46)
-      ctx.lineTo(cx - 12, y + 46)
-      ctx.quadraticCurveTo(cx - 15, y + 40, cx - 16, y + 30)
-      ctx.closePath(); ctx.fill()
-      ctx.beginPath()
-      ctx.moveTo(cx + 14, y + 30)
-      ctx.quadraticCurveTo(cx + 13, y + 40, cx + 10, y + 46)
-      ctx.lineTo(cx + 12, y + 46)
-      ctx.quadraticCurveTo(cx + 15, y + 40, cx + 16, y + 30)
-      ctx.closePath(); ctx.fill()
+      // Green tunic + belt + hood drape
+      rrectStroke(ctx, cx-11, y+30, 22, 24, 2, char.outfit)
+      rrectStroke(ctx, cx-12, y+41, 24, 5, 2, char.trim, 1.5)
+      // Buckle
+      rrectStroke(ctx, cx-2.5, y+40, 5, 7, 1, '#D8C060', 1)
+      // Hood side drapes
+      ctx.fillStyle = char.outfitD; ctx.strokeStyle = OL; ctx.lineWidth = 1.5
+      ctx.beginPath(); ctx.moveTo(cx-11,y+30); ctx.lineTo(cx-16,y+30); ctx.lineTo(cx-14,y+50); ctx.lineTo(cx-11,y+50); ctx.closePath(); ctx.fill(); ctx.stroke()
+      ctx.beginPath(); ctx.moveTo(cx+11,y+30); ctx.lineTo(cx+16,y+30); ctx.lineTo(cx+14,y+50); ctx.lineTo(cx+11,y+50); ctx.closePath(); ctx.fill(); ctx.stroke()
       break
     }
 
     case 'red_shirt': {
-      // Wide honey-yellow body (belly shows below the shirt)
-      const bw = char.plump ? 15 : 12
-      ovalO(ctx, cx, y + 42, bw + 2, 12, char.body)
-      // Short red crop-shirt (top portion only)
-      rrectO(ctx, cx - 11, y + 27, 22, 14, 3, char.outfit)
-      // Shirt hem fold
-      line(ctx, cx - 10, y + 39, cx + 10, y + 39, char.outfitD, 1.5)
-      // Shirt crinkle
-      ctx.globalAlpha = 0.22
-      oval(ctx, cx - 5, y + 31, 2, 4, '#FFFFFF')
-      ctx.globalAlpha = 1.0
-      // Belly spot (exposed honey fur below shirt)
-      ctx.globalAlpha = 0.35
-      oval(ctx, cx, y + 46, 8, 5, char.bodyD)
-      ctx.globalAlpha = 1.0
+      // Short red shirt, honey belly shows below
+      oval(ctx, cx, y+46, char.plump ? 14 : 11, 7, char.bodyD)
+      rrectStroke(ctx, cx-12, y+30, 24, 14, [2,2,0,0], char.outfit)
+      line(ctx, cx-12, y+44, cx+12, y+44, OL, 1.8)
+      rrectStroke(ctx, cx-12, y+44, 24, 9, [0,0,4,4], char.body, 1.8)
       break
     }
   }
@@ -426,67 +391,54 @@ function drawOutfitFront(ctx, char, cx, y) {
 
 function drawOutfitSide(ctx, char, cx, y, dir) {
   switch (char.style) {
-
     case 'dress': {
-      ovalO(ctx, cx + dir, y + 32, 9, 6.5, char.outfit)
-      ovalO(ctx, cx, y + 44, 13, 9.5, char.outfit)
-      ctx.globalAlpha = 0.25
-      oval(ctx, cx + dir * 4, y + 41, 2, 7, char.outfitD)
-      ctx.globalAlpha = 1.0
-      ovalO(ctx, cx + dir, y + 27, 7, 3.5, char.trim)
-      break
-    }
-
-    case 'armour': {
-      ovalO(ctx, cx, y + 40, 11, 9, char.outfitD)
-      rrectO(ctx, cx - 9 + dir, y + 27, 18, 16, 3, char.outfit)
-      line(ctx, cx - 8 + dir, y + 30, cx + 8 + dir, y + 30, char.trim, 1.2)
-      line(ctx, cx - 8 + dir, y + 36, cx + 8 + dir, y + 36, char.trim, 1.2)
-      ovalO(ctx, cx + dir * 13, y + 29, 5, 3.5, char.outfit)
-      ovalO(ctx, cx, y + 48, 9, 5, char.outfitD)
-      break
-    }
-
-    case 'battle_robe': {
-      ovalO(ctx, cx, y + 40, 12, 11, char.outfit)
-      ctx.globalAlpha = 0.28
-      oval(ctx, cx + dir * 7, y + 38, 2, 7, char.outfitD)
-      ctx.globalAlpha = 1.0
-      rrectO(ctx, cx - 11, y + 36, 22, 5, 2, char.trim)
-      circO(ctx, cx + dir * 2, y + 28, 4, char.trim)
-      break
-    }
-
-    case 'detective_coat': {
-      ovalO(ctx, cx, y + 42, 11, 10, char.outfit)
-      ctx.globalAlpha = 0.22
-      oval(ctx, cx + dir * 5, y + 42, 2, 7, OL)
-      ctx.globalAlpha = 1.0
-      ctx.fillStyle = '#706848'
-      rrect(ctx, cx + dir * 2 - 2, y + 29, 4, 16, 1, '#706848')
-      for (let i = 0; i < 3; i++) circ(ctx, cx + dir * 2, y + 31 + i * 5, 1.2, char.trim)
-      break
-    }
-
-    case 'hooded_tunic': {
-      ovalO(ctx, cx, y + 40, 11, 10, char.outfit)
-      rrectO(ctx, cx - 10, y + 37, 20, 4, 2, char.trim)
-      // Hood side drape
-      ctx.fillStyle = char.outfitD
+      ctx.fillStyle = char.outfit; ctx.strokeStyle = OL; ctx.lineWidth = 2
       ctx.beginPath()
-      ctx.moveTo(cx + dir * 14, y + 30)
-      ctx.quadraticCurveTo(cx + dir * 13, y + 40, cx + dir * 9, y + 46)
-      ctx.lineTo(cx + dir * 11, y + 46)
-      ctx.quadraticCurveTo(cx + dir * 15, y + 40, cx + dir * 16, y + 30)
-      ctx.closePath(); ctx.fill()
+      ctx.moveTo(cx-9, y+30); ctx.lineTo(cx+9, y+30)
+      ctx.lineTo(cx + dir*14, y+52); ctx.lineTo(cx - dir*6, y+52)
+      ctx.closePath(); ctx.fill(); ctx.stroke()
+      rrectStroke(ctx, cx-9, y+30, 18, 3, 1, char.trim, 1)
+      circStroke(ctx, cx + dir*2, y+36, 2.5, char.trim, 1)
       break
     }
-
+    case 'armour': {
+      rrectStroke(ctx, cx-11, y+30, 22, 18, 3, char.outfit)
+      line(ctx, cx-10, y+33, cx+10, y+33, char.trim, 1.5)
+      line(ctx, cx-10, y+40, cx+10, y+40, char.trim, 1.5)
+      ovalStroke(ctx, cx + dir*13, y+32, 5, 3.5, char.outfit)
+      rrectStroke(ctx, cx-10, y+47, 20, 6, 2, char.outfitD, 1.5)
+      break
+    }
+    case 'battle_robe': {
+      ctx.fillStyle = char.outfit; ctx.strokeStyle = OL; ctx.lineWidth = 2
+      ctx.beginPath()
+      ctx.moveTo(cx-9, y+30); ctx.lineTo(cx+9, y+30)
+      ctx.quadraticCurveTo(cx + dir*14, y+42, cx + dir*12, y+52)
+      ctx.lineTo(cx - dir*4, y+52)
+      ctx.quadraticCurveTo(cx - dir*6, y+40, cx-9, y+30)
+      ctx.closePath(); ctx.fill(); ctx.stroke()
+      rrectStroke(ctx, cx-12, y+40, 24, 5, 2, char.trim, 1.5)
+      break
+    }
+    case 'detective_coat': {
+      rrectStroke(ctx, cx-11, y+30, 22, 24, 2, char.outfit)
+      ctx.fillStyle = '#706848'; ctx.beginPath(); ctx.rect(cx + dir*2 - 2, y+30, 5, 22); ctx.fill()
+      for (let i=0; i<3; i++) circStroke(ctx, cx + dir*2, y+33+i*6, 1.2, char.trim, 1)
+      break
+    }
+    case 'hooded_tunic': {
+      rrectStroke(ctx, cx-10, y+30, 20, 24, 2, char.outfit)
+      rrectStroke(ctx, cx-11, y+41, 22, 5, 2, char.trim, 1.5)
+      // Hood drape on the back side
+      ctx.fillStyle = char.outfitD; ctx.strokeStyle = OL; ctx.lineWidth = 1.5
+      ctx.beginPath(); ctx.moveTo(cx - dir*10, y+30); ctx.lineTo(cx - dir*16, y+30); ctx.lineTo(cx - dir*13, y+50); ctx.lineTo(cx - dir*10, y+50); ctx.closePath(); ctx.fill(); ctx.stroke()
+      break
+    }
     case 'red_shirt': {
-      const bw = char.plump ? 14 : 11
-      ovalO(ctx, cx, y + 42, bw, 11, char.body)
-      rrectO(ctx, cx - 10, y + 27, 20, 14, 3, char.outfit)
-      line(ctx, cx - 9, y + 39, cx + 9, y + 39, char.outfitD, 1.5)
+      oval(ctx, cx, y+46, char.plump ? 13 : 10, 7, char.bodyD)
+      rrectStroke(ctx, cx-11, y+30, 22, 14, [2,2,0,0], char.outfit)
+      line(ctx, cx-11, y+44, cx+11, y+44, OL, 1.8)
+      rrectStroke(ctx, cx-11, y+44, 22, 9, [0,0,4,4], char.body, 1.8)
       break
     }
   }
@@ -494,409 +446,295 @@ function drawOutfitSide(ctx, char, cx, y, dir) {
 
 function drawOutfitBack(ctx, char, cx, y) {
   switch (char.style) {
-
-    case 'dress':
-      ovalO(ctx, cx, y + 44, 14, 10.5, char.outfitD)
-      ovalO(ctx, cx, y + 32, 9, 6, char.outfitD)
-      ctx.globalAlpha = 0.28
-      oval(ctx, cx - 5, y + 43, 2, 7, OL)
-      oval(ctx, cx + 5, y + 43, 2, 7, OL)
-      ctx.globalAlpha = 1.0
-      break
-
-    case 'armour':
-      ovalO(ctx, cx, y + 40, 11, 9, char.outfitD)
-      // Back-plate
-      rrectO(ctx, cx - 9, y + 27, 18, 16, 3, char.outfitD)
-      line(ctx, cx - 8, y + 30, cx + 8, y + 30, char.trim, 1)
-      ovalO(ctx, cx, y + 48, 9, 5, char.outfitD)
-      break
-
-    case 'battle_robe':
-      ovalO(ctx, cx, y + 40, 12, 11, char.outfitD)
-      rrectO(ctx, cx - 11, y + 36, 22, 5, 2, char.outfitD)
-      break
-
-    case 'detective_coat':
-      ovalO(ctx, cx, y + 42, 11, 10, char.outfitD)
-      // Coat vent
-      line(ctx, cx, y + 40, cx, y + 50, OL, 1)
-      break
-
-    case 'hooded_tunic': {
-      ovalO(ctx, cx, y + 40, 11, 10, char.outfitD)
-      // Back of hood (triangle draping down)
-      ctx.fillStyle = char.outfit
-      ctx.beginPath()
-      ctx.moveTo(cx - 10, y + 28)
-      ctx.lineTo(cx + 10, y + 28)
-      ctx.lineTo(cx + 6,  y + 50)
-      ctx.lineTo(cx - 6,  y + 50)
-      ctx.closePath(); ctx.fill()
-      // Quiver
-      rrectO(ctx, cx + 8, y + 25, 6, 20, 2, char.trim)
-      circ(ctx, cx + 11, y + 24, 2, '#D8C060')
+    case 'dress': {
+      ctx.fillStyle = char.outfitD; ctx.strokeStyle = OL; ctx.lineWidth = 2
+      ctx.beginPath(); ctx.moveTo(cx-10,y+30); ctx.lineTo(cx+10,y+30); ctx.lineTo(cx+15,y+52); ctx.lineTo(cx-15,y+52); ctx.closePath(); ctx.fill(); ctx.stroke()
       break
     }
-
-    case 'red_shirt':
-      ovalO(ctx, cx, y + 42, char.plump ? 14 : 11, 11, char.body)
-      rrectO(ctx, cx - 10, y + 27, 20, 13, 3, char.outfitD)
+    case 'armour': {
+      rrectStroke(ctx, cx-11, y+30, 22, 20, 3, char.outfitD)
+      line(ctx, cx-10, y+33, cx+10, y+33, char.trim, 1)
+      rrectStroke(ctx, cx-10, y+49, 20, 5, 2, char.outfitD, 1.5)
       break
+    }
+    case 'battle_robe': {
+      ctx.fillStyle = char.outfitD; ctx.strokeStyle = OL; ctx.lineWidth = 2
+      ctx.beginPath(); ctx.moveTo(cx-10,y+30); ctx.lineTo(cx+10,y+30); ctx.quadraticCurveTo(cx+14,y+42,cx+12,y+52); ctx.lineTo(cx-12,y+52); ctx.quadraticCurveTo(cx-14,y+42,cx-10,y+30); ctx.closePath(); ctx.fill(); ctx.stroke()
+      break
+    }
+    case 'detective_coat': {
+      rrectStroke(ctx, cx-11, y+30, 22, 24, 2, char.outfitD)
+      line(ctx, cx, y+38, cx, y+53, char.outfit, 1)
+      break
+    }
+    case 'hooded_tunic': {
+      rrectStroke(ctx, cx-11, y+30, 22, 24, 2, char.outfitD)
+      // Back of hood: triangle draping down
+      ctx.fillStyle = char.outfit; ctx.strokeStyle = OL; ctx.lineWidth = 1.5
+      ctx.beginPath(); ctx.moveTo(cx-10,y+29); ctx.lineTo(cx+10,y+29); ctx.lineTo(cx+6,y+52); ctx.lineTo(cx-6,y+52); ctx.closePath(); ctx.fill(); ctx.stroke()
+      // Quiver strapped to back
+      rrectStroke(ctx, cx+8, y+24, 7, 22, 2, '#9A6030', 1.5)
+      circStroke(ctx, cx+11, y+23, 2.5, '#D8C060', 1)
+      break
+    }
+    case 'red_shirt': {
+      rrectStroke(ctx, cx-11, y+30, 22, 12, [2,2,0,0], char.outfitD)
+      rrectStroke(ctx, cx-11, y+42, 22, 11, [0,0,4,4], char.body, 1.8)
+      break
+    }
   }
 }
 
 // ── Head accessories ───────────────────────────────────────────────────────────
 
-function drawHead(ctx, char, cx, y, view, blinking) {
+function drawAccessory(ctx, char, cx, y, view) {
   const isSide = view === 'left' || view === 'right'
   const dir    = view === 'right' ? 1 : -1
-  const hx     = isSide ? cx + dir * 2 : cx
-  const r      = char.plump ? 12 : 11
 
-  // ── Special behind-head (drawn before head so head overlaps) ───────────────
-
-  if (char.special === 'elf_crown' && view !== 'back') {
-    // Pointed elf ears behind head (sides)
-    if (!isSide) {
-      ctx.fillStyle = OL
-      // left ear
-      ctx.beginPath(); ctx.moveTo(cx - r, y + 14); ctx.lineTo(cx - r - 5, y + 4); ctx.lineTo(cx - r + 2, y + 9); ctx.closePath(); ctx.fill()
-      ctx.fillStyle = char.ears
-      ctx.beginPath(); ctx.moveTo(cx - r, y + 14); ctx.lineTo(cx - r - 4, y + 5); ctx.lineTo(cx - r + 1, y + 9); ctx.closePath(); ctx.fill()
-      // right ear
-      ctx.fillStyle = OL
-      ctx.beginPath(); ctx.moveTo(cx + r, y + 14); ctx.lineTo(cx + r + 5, y + 4); ctx.lineTo(cx + r - 2, y + 9); ctx.closePath(); ctx.fill()
-      ctx.fillStyle = char.ears
-      ctx.beginPath(); ctx.moveTo(cx + r, y + 14); ctx.lineTo(cx + r + 4, y + 5); ctx.lineTo(cx + r - 1, y + 9); ctx.closePath(); ctx.fill()
-    } else {
-      // one far ear visible
-      ctx.fillStyle = OL
-      ctx.beginPath(); ctx.moveTo(hx - dir * r, y + 14); ctx.lineTo(hx - dir * (r + 4), y + 5); ctx.lineTo(hx - dir * (r - 2), y + 9); ctx.closePath(); ctx.fill()
-      ctx.fillStyle = char.ears
-      ctx.beginPath(); ctx.moveTo(hx - dir * r, y + 14); ctx.lineTo(hx - dir * (r + 3), y + 6); ctx.lineTo(hx - dir * (r - 1), y + 10); ctx.closePath(); ctx.fill()
-    }
-  }
-
-  if (char.special === 'bear_ears') {
-    const er = 5.5
-    if (!isSide) {
-      circO(ctx, cx - 9, y + 7, er, char.head)
-      circO(ctx, cx + 9, y + 7, er, char.head)
-      circ(ctx, cx - 9, y + 7, 3.5, '#F0A898')
-      circ(ctx, cx + 9, y + 7, 3.5, '#F0A898')
-    } else {
-      circO(ctx, hx + dir * 9, y + 7, er, char.head)
-      circ(ctx, hx + dir * 9, y + 7, 3.5, '#F0A898')
-    }
-  }
-
-  if (char.special === 'green_hood') {
-    // Hood forms pointed silhouette above head
-    if (view !== 'back') {
-      const hoodTip = isSide ? hx - dir * 2 : cx
-      ctx.fillStyle = OL
-      ctx.beginPath()
-      ctx.moveTo(hoodTip, y + 2)
-      ctx.lineTo(hoodTip - (isSide ? dir * 12 : 12), y + 14)
-      ctx.lineTo(hoodTip + (isSide ? dir * 4  : 12), y + 14)
-      ctx.closePath(); ctx.fill()
-      ctx.fillStyle = char.outfit
-      ctx.beginPath()
-      ctx.moveTo(hoodTip, y + 3)
-      ctx.lineTo(hoodTip - (isSide ? dir * 11 : 11), y + 14)
-      ctx.lineTo(hoodTip + (isSide ? dir * 3  : 11), y + 14)
-      ctx.closePath(); ctx.fill()
-    }
-  }
-
-  // ── Head circle ─────────────────────────────────────────────────────────────
-  if (view === 'back') {
-    circO(ctx, cx, y + 17, r, char.bodyD)
-    ctx.globalAlpha = 0.14
-    circ(ctx, cx + 3, y + 15, 5, '#000000')
-    ctx.globalAlpha = 1.0
-    return  // no face on back
-  }
-
-  circO(ctx, hx, y + 17, r, char.head)
-  // Head highlight
-  ctx.globalAlpha = 0.22
-  circ(ctx, hx - (isSide ? dir * 3 : 4), y + 12, 5, '#FFFFFF')
-  ctx.globalAlpha = 1.0
-
-  // ── Eyes ────────────────────────────────────────────────────────────────────
-  if (!blinking) {
-    if (!isSide) {
-      circO(ctx, hx - 5, y + 16, 5.5, '#FFFFFF')
-      circ(ctx,  hx - 5, y + 16, 3.5, char.eyes)
-      circ(ctx,  hx - 4, y + 15,   1, '#FFFFFF')
-      circO(ctx, hx + 5, y + 16, 5.5, '#FFFFFF')
-      circ(ctx,  hx + 5, y + 16, 3.5, char.eyes)
-      circ(ctx,  hx + 6, y + 15,   1, '#FFFFFF')
-    } else {
-      const ex = hx - dir * 3
-      circO(ctx, ex, y + 16, 5.5, '#FFFFFF')
-      circ(ctx,  ex, y + 16, 3.5, char.eyes)
-      circ(ctx,  ex - dir, y + 15, 1, '#FFFFFF')
-    }
-  } else {
-    ctx.strokeStyle = OL; ctx.lineWidth = 2; ctx.lineCap = 'round'
-    if (!isSide) {
-      ctx.beginPath(); ctx.moveTo(hx - 9, y + 16); ctx.lineTo(hx - 2, y + 16); ctx.stroke()
-      ctx.beginPath(); ctx.moveTo(hx + 2, y + 16); ctx.lineTo(hx + 9, y + 16); ctx.stroke()
-    } else {
-      const ex = hx - dir * 3
-      ctx.beginPath(); ctx.moveTo(ex - 4, y + 16); ctx.lineTo(ex + 4, y + 16); ctx.stroke()
-    }
-  }
-
-  // ── Cheek blush ─────────────────────────────────────────────────────────────
-  ctx.globalAlpha = 0.16
-  if (!isSide) {
-    oval(ctx, hx - 9, y + 20, 4, 2.5, '#FF8898')
-    oval(ctx, hx + 9, y + 20, 4, 2.5, '#FF8898')
-  }
-  ctx.globalAlpha = 1.0
-
-  // ── Accessories on front of head ────────────────────────────────────────────
   switch (char.special) {
 
-    case 'elf_crown': {
+    case 'elf_ears': {
       if (view === 'back') break
-      const cw = isSide ? 12 : 16
-      const cx2 = isSide ? hx - dir * 3 : hx
-      ctx.fillStyle = char.trim
-      ctx.beginPath()
+      // Pointed ears on sides of head
+      const earColor = '#D898C8'
       if (!isSide) {
-        ctx.moveTo(cx2 - 8, y + 7)
-        ctx.lineTo(cx2 - 5, y + 1)
-        ctx.lineTo(cx2 - 2, y + 5)
-        ctx.lineTo(cx2,     y + 0)
-        ctx.lineTo(cx2 + 2, y + 5)
-        ctx.lineTo(cx2 + 5, y + 1)
-        ctx.lineTo(cx2 + 8, y + 7)
+        ctx.fillStyle = earColor; ctx.strokeStyle = OL; ctx.lineWidth = 1.5
+        ctx.beginPath(); ctx.moveTo(cx-11,y+10); ctx.lineTo(cx-16,y+2); ctx.lineTo(cx-8,y+8); ctx.closePath(); ctx.fill(); ctx.stroke()
+        ctx.beginPath(); ctx.moveTo(cx+11,y+10); ctx.lineTo(cx+16,y+2); ctx.lineTo(cx+8,y+8); ctx.closePath(); ctx.fill(); ctx.stroke()
+        // Gold crown band
+        rrectStroke(ctx, cx-11, y+6, 22, 4, 2, char.trim, 1.5)
+        circStroke(ctx, cx, y+8, 2.5, '#FF4068', 1)
       } else {
-        ctx.moveTo(cx2 - dir * 5, y + 7)
-        ctx.lineTo(cx2,           y + 1)
-        ctx.lineTo(cx2 + dir * 4, y + 7)
+        // One far ear + crown band
+        const ex = cx - dir * 11
+        ctx.fillStyle = earColor; ctx.strokeStyle = OL; ctx.lineWidth = 1.5
+        ctx.beginPath(); ctx.moveTo(ex,y+10); ctx.lineTo(ex - dir*6,y+2); ctx.lineTo(ex + dir*3,y+8); ctx.closePath(); ctx.fill(); ctx.stroke()
+        rrectStroke(ctx, cx - dir*10, y+6, 18, 4, 2, char.trim, 1.5)
       }
-      ctx.closePath(); ctx.fill()
-      ctx.strokeStyle = OL; ctx.lineWidth = 0.8; ctx.stroke()
-      if (!isSide) circ(ctx, cx2, y + 2, 2.5, '#FF4068')
       break
     }
 
     case 'topknot': {
-      const tx = isSide ? hx - dir : hx
-      circO(ctx, tx, y + 5, 5.5, '#1A0808')
-      circ(ctx,  tx, y + 5, 3.5, '#2A1010')
-      circ(ctx,  tx + 1, y + 4, 1, 'rgba(255,255,255,0.18)')
-      // Hair pin
-      line(ctx, tx - 5, y + 7, tx + 5, y + 4, char.trim, 1)
+      if (view === 'back') break
+      const tx = isSide ? cx - dir : cx
+      circStroke(ctx, tx, y+4, 5.5, '#1A0808')
+      circ(ctx, tx, y+4, 3.5, '#2A1010')
+      circ(ctx, tx+1, y+3, 1, 'rgba(255,255,255,0.2)')
+      line(ctx, tx-5, y+6, tx+5, y+3, char.trim, 1.2)
       break
     }
 
     case 'golden_headband': {
-      const bx = isSide ? hx + dir * 2 : hx
-      const bw = isSide ? 16 : 22
-      rrectO(ctx, bx - bw / 2, y + 10, bw, 4, 2, char.trim)
+      if (view === 'back') break
+      const bw = isSide ? 18 : 22
+      const bx = isSide ? cx + dir*2 : cx
+      rrectStroke(ctx, bx - bw/2, y+9, bw, 5, 2, char.trim, 1.5)
       if (!isSide) {
-        circ(ctx, bx, y + 12, 3, '#FF4828')        // red jewel centre
-        circ(ctx, bx - 6, y + 12, 1.5, '#F8E040')  // side dots
-        circ(ctx, bx + 6, y + 12, 1.5, '#F8E040')
+        circStroke(ctx, cx, y+11, 3, '#FF4828', 1)
+        circStroke(ctx, cx-6, y+11, 1.5, '#F8E040', 1)
+        circStroke(ctx, cx+6, y+11, 1.5, '#F8E040', 1)
       }
       break
     }
 
     case 'deerstalker': {
-      const dx = isSide ? hx + dir * 1 : hx
-      // Cap body
-      ovalO(ctx, dx, y + 9, 13, 4.5, '#5A6860')
+      // Flat cap with front + back peaks
+      rrectStroke(ctx, cx - (isSide?10:13), y+4, isSide?20:26, 7, 3, '#5A6860')
       if (!isSide) {
-        // Peaks front + back
-        ovalO(ctx, dx + 13, y + 10, 4.5, 2.5, '#5A6860')
-        ovalO(ctx, dx - 13, y + 10, 4.5, 2.5, '#5A6860')
-        // Check pattern hint
-        ctx.globalAlpha = 0.25
-        for (let i = -2; i <= 2; i++) line(ctx, dx - 11 + i * 5, y + 6, dx - 11 + i * 5, y + 12, '#000', 0.8)
+        // Front and back brims
+        ctx.fillStyle = '#5A6860'; ctx.strokeStyle = OL; ctx.lineWidth = 1.5
+        ctx.beginPath(); ctx.ellipse(cx+14, y+8, 5, 2.5, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke()
+        ctx.beginPath(); ctx.ellipse(cx-14, y+8, 5, 2.5, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke()
+        // Check texture hint
+        ctx.globalAlpha = 0.18
+        for (let i=-2; i<=2; i++) line(ctx, cx-11+i*6, y+5, cx-11+i*6, y+10, '#000', 0.8)
         ctx.globalAlpha = 1.0
       } else {
-        ovalO(ctx, dx + dir * 14, y + 11, 5, 2.5, '#5A6860')
+        ctx.fillStyle = '#5A6860'; ctx.strokeStyle = OL; ctx.lineWidth = 1.5
+        ctx.beginPath(); ctx.ellipse(cx + dir*12, y+8, 5, 2.5, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke()
       }
       break
     }
 
-    case 'green_hood':
-      // Hood rim around face
-      oval(ctx, cx, y + 18, r + 3.5, 5, OL)
-      oval(ctx, cx, y + 18, r + 2.5, 3.5, char.outfit)
+    case 'green_hood': {
+      if (view === 'back') break
+      // Pointed hood silhouette above body
+      ctx.fillStyle = char.outfit; ctx.strokeStyle = OL; ctx.lineWidth = 2
+      if (!isSide) {
+        ctx.beginPath(); ctx.moveTo(cx,y+0); ctx.lineTo(cx-12,y+10); ctx.lineTo(cx+12,y+10); ctx.closePath(); ctx.fill(); ctx.stroke()
+        // Hood inner rim
+        ctx.fillStyle = char.outfitD
+        ctx.beginPath(); ctx.moveTo(cx-12,y+10); ctx.lineTo(cx-8,y+14); ctx.lineTo(cx+8,y+14); ctx.lineTo(cx+12,y+10); ctx.closePath(); ctx.fill()
+      } else {
+        const tip = cx - dir * 2
+        ctx.beginPath(); ctx.moveTo(tip,y+0); ctx.lineTo(tip-dir*13,y+10); ctx.lineTo(tip+dir*5,y+10); ctx.closePath(); ctx.fill(); ctx.stroke()
+      }
       break
+    }
 
-    case 'bear_ears':
-      // Already drawn behind head above
+    case 'bear_ears': {
+      if (view === 'back') break
+      const r = 6
+      if (!isSide) {
+        circStroke(ctx, cx-10, y+6, r, char.body)
+        circStroke(ctx, cx+10, y+6, r, char.body)
+        circ(ctx, cx-10, y+6, r-2, '#F0A898')
+        circ(ctx, cx+10, y+6, r-2, '#F0A898')
+      } else {
+        circStroke(ctx, cx + dir*10, y+6, r, char.body)
+        circ(ctx, cx + dir*10, y+6, r-2, '#F0A898')
+      }
       break
+    }
   }
 }
 
-// ── Legs & feet ────────────────────────────────────────────────────────────────
-
-function drawLegs(ctx, char, cx, oy, lL, lR, side) {
-  const lx = side ? cx - 5 : cx - 6
-  const rx = side ? cx + 5 : cx + 6
-  // Outlines
-  oval(ctx, lx, oy + 51 + lL, 4.5, 5.5, OL)
-  oval(ctx, rx, oy + 51 + lR, 4.5, 5.5, OL)
-  // Fill
-  oval(ctx, lx, oy + 51 + lL, 3.5, 4.5, char.feet)
-  oval(ctx, rx, oy + 51 + lR, 3.5, 4.5, char.feet)
-  // Feet
-  oval(ctx, lx - 1, oy + 58, 5.5, 2.8, OL)
-  oval(ctx, rx + 1, oy + 58, 5.5, 2.8, OL)
-  oval(ctx, lx - 1, oy + 58, 4.5, 2,   char.feetD)
-  oval(ctx, rx + 1, oy + 58, 4.5, 2,   char.feetD)
-}
-
-// ── Satchel (character-specific) ──────────────────────────────────────────────
-
-function drawSatchel(ctx, char, cx, y, view) {
-  // Sherlock has a magnifying-glass detail; Pooh has a honey pot; others have a bag
-  const isSide = view === 'left' || view === 'right'
-  const dir    = view === 'right' ? 1 : -1
-
-  let sx, sy
-  if (!isSide) {
-    sx = char.style === 'armour' ? cx + 6 : cx + 5
-    sy = y + 35
-  } else {
-    sx = cx - dir * 8
-    sy = y + 37
-  }
-
-  if (char.style === 'red_shirt') {
-    // Honey pot (Pooh)
-    rrectO(ctx, sx - 4, sy, 8, 8, 2, '#E8C040')
-    rrectO(ctx, sx - 3, sy - 3, 6, 3, 1, '#C8A020')
-    // Honey drip
-    ctx.globalAlpha = 0.6
-    circ(ctx, sx + 2, sy + 9, 1.5, '#F0D040')
-    ctx.globalAlpha = 1.0
-  } else if (char.style === 'detective_coat') {
-    // Magnifying glass
-    circO(ctx, sx + 2, sy + 2, 4.5, 'rgba(160,200,220,0.6)')
-    line(ctx, sx + 5, sy + 6, sx + 8, sy + 10, OL, 1.5)
-  } else {
-    rrectO(ctx, sx - 4, sy, 9, 7, 2, '#B89858')
-    rrectO(ctx, sx - 3, sy + 1, 7, 5, 1, '#9A7838')
-    circ(ctx, sx + 1, sy + 1, 1.5, '#F0D860')
-  }
-}
-
-// ── Shadow ─────────────────────────────────────────────────────────────────────
-
+// ── Ground shadow ──────────────────────────────────────────────────────────────
 function drawShadow(ctx, cx, oy) {
   ctx.globalAlpha = 0.12
-  oval(ctx, cx, oy + 61, 14, 3.5, '#000000')
+  oval(ctx, cx, oy+62, 14, 3.5, '#000000')
   ctx.globalAlpha = 1.0
 }
 
-// ── Composite drawing functions ────────────────────────────────────────────────
+// ── Legs & feet ────────────────────────────────────────────────────────────────
+function drawLegs(ctx, char, cx, oy, lL, lR) {
+  const lx  = cx - 5, rx = cx + 5
+  const legW = 4
 
+  ctx.strokeStyle = OL; ctx.lineWidth = 1.4
+
+  // Left leg
+  ctx.fillStyle = char.feetD
+  ctx.beginPath(); ctx.rect(lx - legW/2, oy + 50 + lL, legW, 11); ctx.fill(); ctx.stroke()
+  // Right leg
+  ctx.beginPath(); ctx.rect(rx - legW/2, oy + 50 + lR, legW, 11); ctx.fill(); ctx.stroke()
+
+  // Feet — flat rounded shoes
+  ctx.fillStyle = char.feet
+  ctx.beginPath(); ctx.ellipse(lx - 1, oy + 61, 6, 2.5, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke()
+  ctx.beginPath(); ctx.ellipse(rx + 1, oy + 61, 6, 2.5, 0, 0, Math.PI*2); ctx.fill(); ctx.stroke()
+}
+
+// ── Satchel ────────────────────────────────────────────────────────────────────
+function drawSatchel(ctx, char, cx, y, view) {
+  const isSide = view === 'left' || view === 'right'
+  const dir    = view === 'right' ? 1 : -1
+  const sx     = isSide ? cx - dir * 9 : cx + 7
+  const sy     = y + 36
+
+  if (char.style === 'red_shirt') {
+    // Honey pot
+    rrectStroke(ctx, sx-4, sy, 9, 9, 2, '#E8C040', 1.5)
+    rrectStroke(ctx, sx-3, sy-3, 7, 3, 1, '#C8A020', 1)
+    ctx.globalAlpha = 0.55; circStroke(ctx, sx+3, sy+10, 1.8, '#F0D040', 0.8); ctx.globalAlpha = 1.0
+  } else if (char.style === 'detective_coat') {
+    // Magnifying glass
+    circStroke(ctx, sx+2, sy+3, 5, 'rgba(160,210,230,0.55)', 1.5)
+    line(ctx, sx+6, sy+7, sx+10, sy+11, OL, 2)
+  } else {
+    rrectStroke(ctx, sx-4, sy, 9, 8, 2, '#B89858', 1.5)
+    rrectStroke(ctx, sx-3, sy+1, 7, 6, 1, '#9A7838', 1)
+    circStroke(ctx, sx+1, sy+1, 1.5, '#F0D860', 0.8)
+  }
+}
+
+// ── Full front-facing frame ────────────────────────────────────────────────────
 function drawFront(ctx, char, cx, oy, opts = {}) {
   const { bob = 0, legL = 0, legR = 0, mouthOpen = false, blinking = false } = opts
   const y = oy + bob
 
   drawShadow(ctx, cx, oy)
+  drawLegs(ctx, char, cx, oy, legL, legR)
+  drawCreatureBody(ctx, char, cx, y)
   drawOutfitFront(ctx, char, cx, y)
-  drawHead(ctx, char, cx, y, 'front', blinking)
-
-  if (mouthOpen) {
-    ctx.fillStyle = '#301010'
-    ctx.beginPath(); ctx.ellipse(cx, y + 23, 3, 2, 0, 0, Math.PI); ctx.fill()
-  }
-
+  drawCollar(ctx, char, cx, y)
+  // Front view: slight 3/4 angle — beak tilts left, eye slightly right
+  drawBeak(ctx, char, cx - 2, y, 0, mouthOpen)
+  drawEye(ctx, cx + 3, y + 14, 5.5, char.eyes)   // single eye, slightly right of centre
+  // Cheek blush
+  ctx.globalAlpha = 0.16; oval(ctx, cx + 9, y + 20, 4, 2.5, '#FF8898'); ctx.globalAlpha = 1.0
   drawSatchel(ctx, char, cx, y, 'front')
-  drawLegs(ctx, char, cx, oy, legL, legR, false)
+  drawAccessory(ctx, char, cx, y, 'front')
 }
 
+// ── Full side-facing frame ─────────────────────────────────────────────────────
 function drawSide(ctx, char, cx, oy, facingLeft, opts = {}) {
   const { bob = 0, legL = 0, legR = 0 } = opts
   const dir = facingLeft ? -1 : 1
   const y   = oy + bob
 
   drawShadow(ctx, cx, oy)
+  drawLegs(ctx, char, cx, oy, legL, legR)
+  drawCreatureBody(ctx, char, cx, y)
   drawOutfitSide(ctx, char, cx, y, dir)
-  drawHead(ctx, char, cx, y, facingLeft ? 'left' : 'right', false)
+  drawCollar(ctx, char, cx, y)
+  drawBeak(ctx, char, cx, y, dir, false)
+  // Eye positioned on the face side (slightly behind beak, upper body)
+  drawEye(ctx, cx - dir * 4, y + 14, 5.5, char.eyes)
+  // Cheek blush on face side
+  ctx.globalAlpha = 0.16; oval(ctx, cx - dir * 8, y + 20, 3.5, 2, '#FF8898'); ctx.globalAlpha = 1.0
   drawSatchel(ctx, char, cx, y, facingLeft ? 'left' : 'right')
-  drawLegs(ctx, char, cx, oy, legL, legR, true)
+  drawAccessory(ctx, char, cx, y, facingLeft ? 'left' : 'right')
 }
 
+// ── Full back-facing frame ─────────────────────────────────────────────────────
 function drawBack(ctx, char, cx, oy, opts = {}) {
   const { legL = 0, legR = 0 } = opts
+  const y = oy
 
   drawShadow(ctx, cx, oy)
-  drawOutfitBack(ctx, char, cx, oy)
-  drawHead(ctx, char, cx, oy, 'back', false)
-  drawLegs(ctx, char, cx, oy, legL, legR, false)
+  drawLegs(ctx, char, cx, oy, legL, legR)
+  drawCreatureBody(ctx, char, cx, y)
+  drawOutfitBack(ctx, char, cx, y)
+  drawCollar(ctx, char, cx, y)
+  drawAccessory(ctx, char, cx, y, 'back')
 }
 
 // ── Per-frame dispatch ─────────────────────────────────────────────────────────
-
 function drawFrame(ctx, charId, animKey, frameIdx, ox, oy) {
   const char = CHARS[charId]
   if (!char) return
-
-  const f  = frameIdx
   const cx = ox + 32
+  const f  = frameIdx
 
   switch (animKey) {
     case 'idle':
-      drawFront(ctx, char, cx, oy, { bob: (f === 1 || f === 3) ? 1 : 0 })
+      drawFront(ctx, char, cx, oy, { bob: (f===1||f===3) ? 1 : 0 })
       break
-
     case 'walk_down': {
-      const [lL, lR] = WALK4[f] ?? [0, 0]
+      const [lL, lR] = WALK4[f] ?? [0,0]
       drawFront(ctx, char, cx, oy, { legL: lL, legR: lR })
       break
     }
-
     case 'walk_up': {
-      const [lL, lR] = WALK4[f] ?? [0, 0]
+      const [lL, lR] = WALK4[f] ?? [0,0]
       drawBack(ctx, char, cx, oy, { legL: lL, legR: lR })
       break
     }
-
     case 'walk_left': {
-      const [lL, lR] = WALK8[f] ?? [0, 0]
-      drawSide(ctx, char, cx, oy, true,  { bob: Math.abs(lL) > 1 ? -1 : 0, legL: lL, legR: lR })
+      const [lL, lR] = WALK8[f] ?? [0,0]
+      drawSide(ctx, char, cx, oy, true,  { bob: Math.abs(lL)>1?-1:0, legL: lL, legR: lR })
       break
     }
-
     case 'walk_right': {
-      const [lL, lR] = WALK8[f] ?? [0, 0]
-      drawSide(ctx, char, cx, oy, false, { bob: Math.abs(lL) > 1 ? -1 : 0, legL: lL, legR: lR })
+      const [lL, lR] = WALK8[f] ?? [0,0]
+      drawSide(ctx, char, cx, oy, false, { bob: Math.abs(lL)>1?-1:0, legL: lL, legR: lR })
       break
     }
-
     case 'talk':
-      drawFront(ctx, char, cx, oy, {
-        mouthOpen: f === 1 || f === 3,
-        bob:       f === 1 || f === 3 ? -1 : 0,
-      })
+      drawFront(ctx, char, cx, oy, { mouthOpen: f===1||f===3, bob: (f===1||f===3)?-1:0 })
       break
-
     case 'blink':
-      drawFront(ctx, char, cx, oy, { blinking: f === 1 })
+      drawFront(ctx, char, cx, oy, { blinking: f===1 })
       break
   }
 }
 
 // ── Public API ─────────────────────────────────────────────────────────────────
-
 export function generateSpriteSheet(charId) {
   const canvas  = document.createElement('canvas')
-  canvas.width  = FRAME * COLS   // 512
-  canvas.height = FRAME * ROWS   // 448
+  canvas.width  = FRAME * COLS
+  canvas.height = FRAME * ROWS
   const ctx     = canvas.getContext('2d')
   ctx.imageSmoothingEnabled = true
   ctx.imageSmoothingQuality = 'high'
@@ -912,13 +750,12 @@ export function generateSpriteSheet(charId) {
   return canvas.toDataURL('image/png')
 }
 
-const CACHE_VERSION = 'v5'
+const CACHE_VERSION = 'v7'
 
 export function getCachedSprite(charId) {
   try { return localStorage.getItem(`haven_sprite_${CACHE_VERSION}_${charId}`) }
   catch { return null }
 }
-
 export function setCachedSprite(charId, dataUrl) {
   try { localStorage.setItem(`haven_sprite_${CACHE_VERSION}_${charId}`, dataUrl) }
   catch {}

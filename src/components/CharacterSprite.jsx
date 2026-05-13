@@ -332,13 +332,22 @@ export default function CharacterSprite({
             </div>
           </div>
 
-          <p
-            className="mt-1.5 text-xs font-bold text-center text-white/90 leading-tight"
-            style={{ fontFamily: "'Nunito', sans-serif",
-                     textShadow: '0 1px 4px rgba(0,0,0,0.9)', maxWidth: 68 }}
-          >
-            {heroData.name.split(' ')[0]}
-          </p>
+          <AnimatePresence>
+            {bark && (
+              <motion.p
+                key="name-label"
+                className="mt-1.5 text-xs font-bold text-center text-white/90 leading-tight"
+                style={{ fontFamily: "'Nunito', sans-serif",
+                         textShadow: '0 1px 4px rgba(0,0,0,0.9)', maxWidth: 68 }}
+                initial={{ opacity: 0, y: 2 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 2 }}
+                transition={{ duration: 0.15 }}
+              >
+                {heroData.name.split(' ')[0]}
+              </motion.p>
+            )}
+          </AnimatePresence>
 
           <AnimatePresence>
             {isLeader && (

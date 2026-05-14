@@ -1,13 +1,7 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useGameTime, getTimeState } from '../hooks/useGameTime'
-import {
-  ForestFarBG, ForestMidBG,
-  PortFarBG, PortMidBG,
-  MountainsFarBG, MountainsMidBG,
-  MeadowFarBG, MeadowMidBG,
-  BIOME_THEMES,
-} from './BiomeContent'
+import { BIOME_THEMES } from './BiomeContent'
 
 const EASE = { duration: 2.5, ease: 'easeInOut' }
 
@@ -288,7 +282,7 @@ export default function WorldStage({ overrideHour, housingTier = 'Cardboard Box'
         className="absolute inset-0"
         style={{ zIndex: 0, transform: `translate(${farX}px,${farY}px)`, willChange: 'transform' }}
       >
-        {/* Sky gradient crossfade between time states within this biome */}
+        {/* Sky gradient crossfade between time states */}
         {Object.entries(biomeThemes).map(([state, th]) => (
           <motion.div
             key={state}
@@ -299,18 +293,14 @@ export default function WorldStage({ overrideHour, housingTier = 'Cardboard Box'
           />
         ))}
 
-        {/* Far-BG SVG */}
-        <svg
-          viewBox="0 0 800 420"
-          preserveAspectRatio="xMidYMid slice"
+        {/* Sky asset */}
+        <img
+          src={`/assets/biomes/${biome}/sky.png`}
           className="absolute inset-0 w-full h-full"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          {biome === 'forest'    && <ForestFarBG    timeState={timeState} T={T} />}
-          {biome === 'port'      && <PortFarBG      timeState={timeState} T={T} />}
-          {biome === 'mountains' && <MountainsFarBG timeState={timeState} T={T} />}
-          {biome === 'meadow'    && <MeadowFarBG    timeState={timeState} T={T} />}
-        </svg>
+          style={{ objectFit: 'cover', mixBlendMode: 'soft-light', opacity: 0.45 }}
+          alt=""
+          draggable={false}
+        />
       </div>
 
       {/* ══════════════════════════════════════════════════════════════════════
@@ -320,16 +310,86 @@ export default function WorldStage({ overrideHour, housingTier = 'Cardboard Box'
         className="absolute inset-0"
         style={{ zIndex: 1, transform: `translate(${midX}px,${midY}px)`, willChange: 'transform' }}
       >
+        {/* Midground asset */}
+        <img
+          src={`/assets/biomes/${biome}/midground.png`}
+          className="absolute inset-0 w-full h-full"
+          style={{ objectFit: 'cover', opacity: 0.75 }}
+          alt=""
+          draggable={false}
+        />
+
+        {/* Buildings + interactive overlays */}
         <svg
           viewBox="0 0 800 420"
-          preserveAspectRatio="xMidYMid slice"
+          preserveAspectRatio="xMidYMid meet"
           className="absolute inset-0 w-full h-full"
           xmlns="http://www.w3.org/2000/svg"
         >
-          {biome === 'forest'    && <ForestMidBG    timeState={timeState} T={T} housingTier={housingTier} isDamaged={isDamaged} onEnterHouse={onEnterHouse} BUILDINGS={BUILDINGS} />}
-          {biome === 'port'      && <PortMidBG      timeState={timeState} T={T} housingTier={housingTier} isDamaged={isDamaged} onEnterHouse={onEnterHouse} BUILDINGS={BUILDINGS} />}
-          {biome === 'mountains' && <MountainsMidBG timeState={timeState} T={T} housingTier={housingTier} isDamaged={isDamaged} onEnterHouse={onEnterHouse} BUILDINGS={BUILDINGS} />}
-          {biome === 'meadow'    && <MeadowMidBG    timeState={timeState} T={T} housingTier={housingTier} isDamaged={isDamaged} onEnterHouse={onEnterHouse} BUILDINGS={BUILDINGS} />}
+          {/* Buildings */}
+          {BUILDINGS.map(({ tierName, Cmp }) => (
+            <motion.g
+              key={tierName}
+              animate={{ opacity: housingTier === tierName ? 1 : 0 }}
+              transition={EASE}
+              style={{ pointerEvents: 'none' }}
+            >
+              <Cmp T={T} EASE={EASE} />
+            </motion.g>
+          ))}
+
+          {/* Crisis damage */}
+          <motion.g
+            animate={{ opacity: isDamaged ? 1 : 0 }}
+            transition={{ duration: 1.2 }}
+            style={{ pointerEvents: 'none' }}
+          >
+            <rect x={300} y={218} width={200} height={165} fill="rgba(200,30,10,0.10)" />
+            <polyline points="382,242 371,272 387,296" fill="none" stroke="#CC1808" strokeWidth="2" strokeLinejoin="round" opacity={0.65} />
+            <polyline points="416,258 429,284 418,312" fill="none" stroke="#CC1808" strokeWidth="1.6" strokeLinejoin="round" opacity={0.55} />
+          </motion.g>
+
+          {/* Smoke puffs when damaged */}
+          {isDamaged && [
+            { cx: 383, delay: 0   },
+            { cx: 400, delay: 0.9 },
+            { cx: 417, delay: 1.7 },
+          ].map(({ cx, delay }, i) => (
+            <motion.circle
+              key={`smk${i}`}
+              cx={cx} cy={262} r={7}
+              fill="rgba(88,78,68,0.60)"
+              initial={{ y: 0, opacity: 0 }}
+              animate={{ y: -52, opacity: [0, 0.55, 0] }}
+              transition={{ duration: 2.6, delay, repeat: Infinity, ease: 'easeOut' }}
+            />
+          ))}
+
+          {/* Door hit area */}
+          {onEnterHouse && (
+            <g style={{ cursor: 'pointer' }} onClick={onEnterHouse}>
+              <rect x={374} y={326} width={52} height={52} fill="transparent" />
+              <motion.ellipse
+                cx={400} cy={374} rx={30} ry={8}
+                fill="#FFE080"
+                animate={{ opacity: [0, 0.18, 0], scale: [0.9, 1.1, 0.9] }}
+                transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut' }}
+                style={{ pointerEvents: 'none' }}
+              />
+            </g>
+          )}
+
+          {/* Time-state label */}
+          <motion.text
+            x={18} y={410}
+            fontSize="11"
+            fontFamily="Georgia, 'Times New Roman', serif"
+            letterSpacing="0.08em"
+            animate={{ fill: T.labelFill, opacity: 0.72 }}
+            transition={EASE}
+          >
+            {T.label}
+          </motion.text>
         </svg>
       </div>
 
@@ -339,8 +399,6 @@ export default function WorldStage({ overrideHour, housingTier = 'Cardboard Box'
 
 // ─── Foreground layer ─────────────────────────────────────────────────────────
 export function ForegroundLayer({ timeState, biome = 'forest' }) {
-  const T = (BIOME_THEMES[biome] ?? BIOME_THEMES.forest)[timeState] ?? {}
-
   const { nx, ny } = useMouseParallax()
   const fgX = -(nx * 20)
   const fgY = -(ny * 20)
@@ -350,66 +408,13 @@ export function ForegroundLayer({ timeState, biome = 'forest' }) {
       className="absolute inset-0 pointer-events-none"
       style={{ zIndex: 2, transform: `translate(${fgX}px,${fgY}px)`, willChange: 'transform' }}
     >
-      <svg
-        viewBox="0 0 800 420"
-        preserveAspectRatio="xMidYMid slice"
+      <img
+        src={`/assets/biomes/${biome}/foreground.png`}
         className="absolute inset-0 w-full h-full"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        {/* Left foreground foliage */}
-        <motion.path
-          d="M-20,420 C20,370 72,330 108,318 C82,342 46,370 5,420 Z"
-          animate={{ fill: T.canopy1 }} transition={EASE} opacity={0.94}
-        />
-        <motion.path
-          d="M-35,392 C18,332 78,292 122,278 C94,307 52,342 8,394 Z"
-          animate={{ fill: T.canopy1s }} transition={EASE} opacity={0.88}
-        />
-        <motion.path
-          d="M2,348 C34,302 86,272 118,262 C94,282 60,314 24,352 Z"
-          animate={{ fill: T.canopy1 }} transition={EASE} opacity={0.78}
-        />
-        <motion.path
-          d="M-18,420 C6,402 38,386 60,378 C42,396 16,412 -8,420 Z"
-          animate={{ fill: T.canopy1s }} transition={EASE} opacity={0.96}
-        />
-
-        {/* Right foreground foliage */}
-        <motion.path
-          d="M820,420 C780,370 728,330 692,318 C718,342 754,370 795,420 Z"
-          animate={{ fill: T.canopy2 }} transition={EASE} opacity={0.94}
-        />
-        <motion.path
-          d="M835,392 C782,332 722,292 678,278 C706,307 748,342 792,394 Z"
-          animate={{ fill: T.canopy2s }} transition={EASE} opacity={0.88}
-        />
-        <motion.path
-          d="M798,348 C766,302 714,272 682,262 C706,282 740,314 776,352 Z"
-          animate={{ fill: T.canopy2 }} transition={EASE} opacity={0.78}
-        />
-        <motion.path
-          d="M818,420 C794,402 762,386 740,378 C758,396 784,412 808,420 Z"
-          animate={{ fill: T.canopy2s }} transition={EASE} opacity={0.96}
-        />
-
-        {/* Foreground rocks */}
-        <motion.path
-          d="M0,420 C10,412 28,409 42,414 C34,419 16,421 0,420 Z"
-          animate={{ fill: T.groundNear }} transition={EASE}
-        />
-        <motion.path
-          d="M35,418 C50,410 70,408 82,414 C74,420 52,421 35,420 Z"
-          animate={{ fill: T.groundFront }} transition={EASE}
-        />
-        <motion.path
-          d="M718,418 C730,410 750,408 762,414 C754,420 732,421 718,420 Z"
-          animate={{ fill: T.groundFront }} transition={EASE}
-        />
-        <motion.path
-          d="M758,420 C770,412 788,409 800,413 L800,420 Z"
-          animate={{ fill: T.groundNear }} transition={EASE}
-        />
-      </svg>
+        style={{ objectFit: 'cover' }}
+        alt=""
+        draggable={false}
+      />
 
       {/* Breathing vignette */}
       <motion.div

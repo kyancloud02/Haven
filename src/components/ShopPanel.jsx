@@ -289,7 +289,11 @@ export default function ShopPanel({ onClose, gameState, updateState, activeRepor
 
     const isBlessed = hintedItem?.id === item.id
 
-    const patch = { gold: gameState.gold - item.price }
+    const inv = gameState.inventory ?? []
+    const patch = {
+      gold: gameState.gold - item.price,
+      inventory: inv.includes(item.id) ? inv : [...inv, item.id],
+    }
     if (isBlessed) {
       patch.blessing = {
         expiresDate:   getTomorrowKey(),

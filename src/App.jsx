@@ -13,6 +13,7 @@ import { useDailyReport } from './hooks/useDailyReport'
 import { useVisitor } from './hooks/useVisitor'
 import { useCrisis } from './hooks/useCrisis'
 import { useHeritage, toRoman } from './hooks/useHeritage'
+import { useBiome } from './hooks/useBiome'
 import CrisisModal from './components/CrisisModal'
 import HeirModal from './components/HeirModal'
 import { getTimeState } from './hooks/useGameTime'
@@ -94,6 +95,7 @@ export default function App() {
   const { currentVisitor, summonVisitor, dismissVisitor } = useVisitor()
   const { crisisEvent, isDamaged, triggerCrisis, dismissCrisis } = useCrisis(gameState, updateState)
   const { ageDays, eraPrestige, totalPrestige, forceUnlock, restartWithHeir } = useHeritage(gameState, updateState)
+  const [biome, setBiome] = useBiome()
   const [debugHour, setDebugHour]           = useState(() => new Date().getHours())
   const [shopOpen, setShopOpen]             = useState(false)
   const [mailboxOpen, setMailboxOpen]       = useState(false)
@@ -155,6 +157,7 @@ export default function App() {
               housingTier={gameState.housingTier}
               isDamaged={isDamaged}
               onEnterHouse={() => setIsIndoor(true)}
+              biome={biome}
             />
             {/* Outdoor characters */}
             <div className="absolute inset-0 pointer-events-none">
@@ -179,7 +182,7 @@ export default function App() {
                 )}
               </AnimatePresence>
             </div>
-            <ForegroundLayer timeState={effectiveTimeState} />
+            <ForegroundLayer timeState={effectiveTimeState} biome={biome} />
           </motion.div>
         )}
       </AnimatePresence>
@@ -347,6 +350,8 @@ export default function App() {
             eraPrestige={eraPrestige}
             totalPrestige={totalPrestige}
             onForceUnlock={forceUnlock}
+            biome={biome}
+            onBiomeChange={setBiome}
           />
         )}
       </AnimatePresence>

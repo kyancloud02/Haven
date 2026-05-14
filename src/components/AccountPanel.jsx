@@ -9,7 +9,7 @@ const STATE_META = {
   SLEEP: { accent: '#8890CC', label: 'Sleep · Night',   range: '22 – 07' },
 }
 
-export default function AccountPanel({ onClose, debugHour, onDebugHourChange, onResetReport, onSummonVisitor, onTriggerCrisis, ageDays, eraPrestige, totalPrestige, onForceUnlock }) {
+export default function AccountPanel({ onClose, debugHour, onDebugHourChange, onResetReport, onSummonVisitor, onTriggerCrisis, ageDays, eraPrestige, totalPrestige, onForceUnlock, biome, onBiomeChange }) {
   const timeState = getTimeState(debugHour)
   const meta = STATE_META[timeState]
   const displayHour = String(debugHour).padStart(2, '0') + ':00'
@@ -52,6 +52,43 @@ export default function AccountPanel({ onClose, debugHour, onDebugHourChange, on
             <p style={{ fontFamily: "'Nunito', sans-serif", color: 'white', fontWeight: 700, fontSize: '0.95rem' }}>Villager</p>
             <p style={{ fontFamily: "'Nunito', sans-serif", color: 'rgba(255,255,255,0.35)', fontSize: '0.75rem' }}>Guest Account</p>
           </div>
+        </div>
+      </div>
+
+      {/* Biome selector — always visible */}
+      <div className="px-5 py-4" style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+        <p className="mb-3" style={{ fontFamily:"'Nunito', sans-serif", color:'rgba(255,255,255,0.45)', fontSize:'0.7rem', letterSpacing:'0.10em', textTransform:'uppercase' }}>
+          World Theme
+        </p>
+        <div className="grid grid-cols-2 gap-2">
+          {[
+            { id: 'forest',    icon: '🌲', label: 'Forest',    accent: '#74C69D' },
+            { id: 'port',      icon: '⚓', label: 'Port',       accent: '#0096C7' },
+            { id: 'mountains', icon: '⛰️', label: 'Mountains', accent: '#A78BFA' },
+            { id: 'meadow',    icon: '🌻', label: 'Meadow',    accent: '#4ADE80' },
+          ].map(({ id, icon, label, accent }) => (
+            <button
+              key={id}
+              onClick={() => onBiomeChange(id)}
+              style={{
+                fontFamily: "'Nunito', sans-serif",
+                padding: '8px 12px',
+                borderRadius: 10,
+                fontSize: '0.78rem',
+                fontWeight: 700,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+                background: biome === id ? `${accent}22` : 'rgba(255,255,255,0.05)',
+                border: `1px solid ${biome === id ? accent + '55' : 'rgba(255,255,255,0.08)'}`,
+                color: biome === id ? accent : 'rgba(255,255,255,0.40)',
+                transition: 'all 0.15s',
+                cursor: 'pointer',
+              }}
+            >
+              <span>{icon}</span> {label}
+            </button>
+          ))}
         </div>
       </div>
 

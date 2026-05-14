@@ -1,113 +1,17 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { useGameTime, getTimeState } from '../hooks/useGameTime'
-
-// ─── Per-state palettes ────────────────────────────────────────────────────────
-const THEMES = {
-  AWAY: {
-    skyTop:       '#87CEEB',
-    skyBottom:    '#C8E8F8',
-    hill1:        '#8BDB70',
-    hill2:        '#76C858',
-    groundMid:    '#6AB848',
-    groundNear:   '#5CAA3C',
-    groundFront:  '#50A032',
-    canopy1:      '#5A9040',
-    canopy1s:     '#3E6B2A',
-    canopy2:      '#4E8838',
-    canopy2s:     '#346025',
-    trunk:        '#9B7250',
-    cloudOpacity: 1,
-    fireflyOpacity: 0,
-    starOpacity:  0,
-    boxGlow:      0,
-    ambientFill:  '#FFE8A0',
-    ambientOpacity: 0.10,
-    mistOpacity:  0.06,
-    label:        'Away · Daytime',
-    labelFill:    '#4A8060',
-  },
-  HOME: {
-    skyTop:       '#C24018',
-    skyBottom:    '#E8804A',
-    hill1:        '#4A6A28',
-    hill2:        '#3C5820',
-    groundMid:    '#304818',
-    groundNear:   '#283C12',
-    groundFront:  '#20300C',
-    canopy1:      '#3A5822',
-    canopy1s:     '#283C15',
-    canopy2:      '#324E1C',
-    canopy2s:     '#203410',
-    trunk:        '#7B5838',
-    cloudOpacity: 0,
-    fireflyOpacity: 0,
-    starOpacity:  0,
-    boxGlow:      1,
-    ambientFill:  '#FF8020',
-    ambientOpacity: 0.13,
-    mistOpacity:  0.10,
-    label:        'Home · Evening',
-    labelFill:    '#C07040',
-  },
-  SLEEP: {
-    skyTop:       '#070C28',
-    skyBottom:    '#101640',
-    hill1:        '#122010',
-    hill2:        '#0E1808',
-    groundMid:    '#0A1206',
-    groundNear:   '#080E04',
-    groundFront:  '#060A03',
-    canopy1:      '#141E10',
-    canopy1s:     '#0C1408',
-    canopy2:      '#101A0C',
-    canopy2s:     '#0A1006',
-    trunk:        '#1E1610',
-    cloudOpacity: 0,
-    fireflyOpacity: 1,
-    starOpacity:  1,
-    boxGlow:      0,
-    ambientFill:  '#100838',
-    ambientOpacity: 0.32,
-    mistOpacity:  0.14,
-    label:        'Sleep · Night',
-    labelFill:    '#8890CC',
-  },
-}
-
-// ─── Static scene data ─────────────────────────────────────────────────────────
-const STARS = [
-  [55,22],[128,10],[215,38],[295,16],[375,28],[462,6],
-  [542,33],[612,18],[682,46],[742,12],[792,30],
-  [92,52],[178,66],[318,60],[502,56],[658,68],[762,58],
-  [35,80],[160,88],[440,75],[580,82],[720,90],
-]
-
-const FIREFLIES = [
-  { x:112, y:278, d:0.0 }, { x:198, y:308, d:0.8 }, { x:158, y:252, d:1.5 },
-  { x:618, y:288, d:0.3 }, { x:678, y:258, d:1.1 }, { x:642, y:318, d:1.9 },
-  { x:348, y:292, d:0.6 }, { x:478, y:276, d:1.3 }, { x:272, y:316, d:2.2 },
-  { x:548, y:302, d:1.0 }, { x:728, y:298, d:1.7 }, { x: 88, y:338, d:2.5 },
-  { x:438, y:332, d:0.4 },
-]
-
-const CLOUDS = [
-  { x:148, y:76,  s:1.00, spd:28 },
-  { x:390, y:53,  s:1.25, spd:40 },
-  { x:650, y:94,  s:0.82, spd:22 },
-]
-
-const MIST = [
-  { cx: 180, cy: 298, rx: 310, ry: 30, spd: 38, delay: 0   },
-  { cx: 620, cy: 318, rx: 260, ry: 24, spd: 52, delay: 5   },
-  { cx: 400, cy: 340, rx: 220, ry: 20, spd: 32, delay: 11  },
-]
+import {
+  ForestFarBG, ForestMidBG,
+  PortFarBG, PortMidBG,
+  MountainsFarBG, MountainsMidBG,
+  MeadowFarBG, MeadowMidBG,
+  BIOME_THEMES,
+} from './BiomeContent'
 
 const EASE = { duration: 2.5, ease: 'easeInOut' }
 
 // ─── Mouse parallax hook ───────────────────────────────────────────────────────
-// Returns normalized mouse position (nx, ny) each in range [-0.5, 0.5].
-// Uses a lerp RAF loop for smooth spring-like lag.
 function useMouseParallax() {
   const [pos, setPos] = useState({ nx: 0, ny: 0 })
   useEffect(() => {
@@ -123,7 +27,6 @@ function useMouseParallax() {
       setPos(prev => {
         const nx = prev.nx + (target.nx - prev.nx) * 0.07
         const ny = prev.ny + (target.ny - prev.ny) * 0.07
-        // Skip re-render when settled to avoid unnecessary work
         if (Math.abs(nx - prev.nx) < 0.0005 && Math.abs(ny - prev.ny) < 0.0005) return prev
         return { nx, ny }
       })
@@ -361,17 +264,18 @@ const BUILDINGS = [
 ]
 
 // ─── Component ─────────────────────────────────────────────────────────────────
-export default function WorldStage({ overrideHour, housingTier = 'Cardboard Box', isDamaged = false, onEnterHouse }) {
+export default function WorldStage({ overrideHour, housingTier = 'Cardboard Box', isDamaged = false, onEnterHouse, biome = 'forest' }) {
   const realTimeState = useGameTime()
   const timeState = overrideHour !== undefined ? getTimeState(overrideHour) : realTimeState
-  const T = THEMES[timeState]
 
-  // Parallax: mouse position normalized to [-0.5, 0.5]
+  const biomeThemes = BIOME_THEMES[biome] ?? BIOME_THEMES.forest
+  const T = biomeThemes[timeState] ?? biomeThemes.AWAY
+
+  // Parallax
   const { nx, ny } = useMouseParallax()
-  // Shift opposite to mouse direction; multiply by 2× because nx is ±0.5
-  const farX = -(nx * 4)    // ±2 px max
+  const farX = -(nx * 4)
   const farY = -(ny * 4)
-  const midX = -(nx * 10)   // ±5 px max
+  const midX = -(nx * 10)
   const midY = -(ny * 10)
 
   return (
@@ -379,15 +283,13 @@ export default function WorldStage({ overrideHour, housingTier = 'Cardboard Box'
 
       {/* ══════════════════════════════════════════════════════════════════════
           LAYER 1 — Far Background  (z-index 0)
-          Sky gradients + celestial bodies + floating islands
-          Shifts ±2 px opposite to mouse.
       ════════════════════════════════════════════════════════════════════════ */}
       <div
         className="absolute inset-0"
         style={{ zIndex: 0, transform: `translate(${farX}px,${farY}px)`, willChange: 'transform' }}
       >
-        {/* Sky gradient crossfade */}
-        {Object.entries(THEMES).map(([state, th]) => (
+        {/* Sky gradient crossfade between time states within this biome */}
+        {Object.entries(biomeThemes).map(([state, th]) => (
           <motion.div
             key={state}
             className="absolute inset-0"
@@ -397,124 +299,22 @@ export default function WorldStage({ overrideHour, housingTier = 'Cardboard Box'
           />
         ))}
 
-        {/* Far-BG SVG: stars, sun, moon, clouds, floating islands */}
+        {/* Far-BG SVG */}
         <svg
           viewBox="0 0 800 420"
           preserveAspectRatio="xMidYMid slice"
           className="absolute inset-0 w-full h-full"
           xmlns="http://www.w3.org/2000/svg"
         >
-          <defs>
-            <filter id="sun-glow" x="-80%" y="-80%" width="260%" height="260%">
-              <feGaussianBlur stdDeviation="14" result="b" />
-              <feMerge>
-                <feMergeNode in="b" />
-                <feMergeNode in="SourceGraphic" />
-              </feMerge>
-            </filter>
-
-            <mask id="crescent">
-              <circle cx="640" cy="78" r="26" fill="white" />
-              <circle cx="655" cy="73" r="22" fill="black" />
-            </mask>
-          </defs>
-
-          {/* ── Stars (SLEEP) ── */}
-          {STARS.map(([x, y], i) => (
-            <motion.circle
-              key={`s${i}`} cx={x} cy={y} r={i % 4 === 0 ? 1.8 : 1.1}
-              fill="white"
-              animate={{ opacity: T.starOpacity * (0.5 + (i * 7 % 11) * 0.045) }}
-              transition={EASE}
-            />
-          ))}
-
-          {/* ── Daytime sun (AWAY) ── */}
-          <motion.g animate={{ opacity: timeState === 'AWAY' ? 1 : 0 }} transition={EASE}>
-            <circle cx={620} cy={72} r={64} fill="#FFE040" opacity={0.22} filter="url(#sun-glow)" />
-            <circle cx={620} cy={72} r={36} fill="#FFE856" />
-          </motion.g>
-
-          {/* ── Setting sun on horizon (HOME) ── */}
-          <motion.g animate={{ opacity: timeState === 'HOME' ? 1 : 0 }} transition={EASE}>
-            <ellipse cx={65} cy={340} rx={160} ry={55} fill="#FF6820" opacity={0.28} filter="url(#sun-glow)" />
-            <circle cx={65} cy={355} r={70} fill="#FF7030" opacity={0.90} />
-          </motion.g>
-
-          {/* ── Crescent moon (SLEEP) ── */}
-          <motion.g animate={{ opacity: timeState === 'SLEEP' ? 1 : 0 }} transition={EASE}>
-            <circle cx={640} cy={78} r={38} fill="#9090CC" opacity={0.18} filter="url(#sun-glow)" />
-            <circle cx={640} cy={78} r={26} fill="#EEEEFF" mask="url(#crescent)" />
-          </motion.g>
-
-          {/* ── Clouds (AWAY) ── */}
-          {CLOUDS.map((c, i) => (
-            <motion.g
-              key={`cl${i}`}
-              animate={{ opacity: T.cloudOpacity, x: [0, c.spd, 0] }}
-              transition={{
-                opacity: EASE,
-                x: { duration: c.spd * 1.8, repeat: Infinity, ease: 'easeInOut' },
-              }}
-            >
-              <ellipse cx={c.x}           cy={c.y}          rx={50*c.s} ry={22*c.s} fill="white" opacity={0.90} />
-              <ellipse cx={c.x-23*c.s}   cy={c.y+ 4*c.s}  rx={28*c.s} ry={18*c.s} fill="white" opacity={0.90} />
-              <ellipse cx={c.x+25*c.s}   cy={c.y+ 3*c.s}  rx={33*c.s} ry={19*c.s} fill="white" opacity={0.90} />
-              <ellipse cx={c.x+ 2*c.s}   cy={c.y+15*c.s}  rx={46*c.s} ry={ 9*c.s} fill="#C0D8EC" opacity={0.28} />
-            </motion.g>
-          ))}
-
-          {/* ── Floating islands (Islets style) ── */}
-          {/* Island 1 — left, mid-height */}
-          <motion.g
-            animate={{ opacity: timeState === 'AWAY' ? 0.93 : timeState === 'HOME' ? 0.50 : 0.14 }}
-            transition={EASE}
-          >
-            <ellipse cx={185} cy={163} rx={58} ry={20} fill="#9A8A70" />
-            <ellipse cx={170} cy={173} rx={42} ry={14} fill="white" opacity={0.62} />
-            <ellipse cx={202} cy={176} rx={30} ry={11} fill="white" opacity={0.52} />
-            <ellipse cx={183} cy={179} rx={18} ry={8}  fill="white" opacity={0.38} />
-            <ellipse cx={185} cy={148} rx={50} ry={12} fill="#8A7060" />
-            <ellipse cx={172} cy={136} rx={32} ry={19} fill="#5A9040" />
-            <ellipse cx={202} cy={133} rx={23} ry={16} fill="#6AAC4A" />
-            <ellipse cx={158} cy={141} rx={17} ry={13} fill="#4E7E35" />
-            <rect x={197} y={126} width={5} height={22} rx={2} fill="#7A5030" />
-            <ellipse cx={200} cy={121} rx={14} ry={12} fill="#5A9040" />
-          </motion.g>
-
-          {/* Island 2 — right, higher and smaller */}
-          <motion.g
-            animate={{ opacity: timeState === 'AWAY' ? 0.85 : timeState === 'HOME' ? 0.40 : 0.10 }}
-            transition={EASE}
-          >
-            <ellipse cx={580} cy={116} rx={44} ry={15} fill="#9A8A70" />
-            <ellipse cx={568} cy={124} rx={34} ry={11} fill="white" opacity={0.58} />
-            <ellipse cx={596} cy={128} rx={24} ry={9}  fill="white" opacity={0.48} />
-            <ellipse cx={580} cy={103} rx={38} ry={10} fill="#8A7060" />
-            <ellipse cx={572} cy={92}  rx={26} ry={16} fill="#5A9040" />
-            <ellipse cx={594} cy={89}  rx={18} ry={14} fill="#6AAC4A" />
-            <ellipse cx={560} cy={96}  rx={13} ry={10} fill="#4E7E35" />
-          </motion.g>
-
-          {/* Island 3 — distant center, small */}
-          <motion.g
-            animate={{ opacity: timeState === 'AWAY' ? 0.68 : timeState === 'HOME' ? 0.28 : 0.07 }}
-            transition={EASE}
-          >
-            <ellipse cx={370} cy={83}  rx={28} ry={10} fill="#A09080" />
-            <ellipse cx={370} cy={91}  rx={22} ry={8}  fill="white" opacity={0.54} />
-            <ellipse cx={370} cy={73}  rx={22} ry={9}  fill="#8A7865" />
-            <ellipse cx={366} cy={62}  rx={17} ry={13} fill="#5A9040" opacity={0.9} />
-            <ellipse cx={379} cy={60}  rx={12} ry={10} fill="#6AAC4A" opacity={0.85} />
-          </motion.g>
+          {biome === 'forest'    && <ForestFarBG    timeState={timeState} T={T} />}
+          {biome === 'port'      && <PortFarBG      timeState={timeState} T={T} />}
+          {biome === 'mountains' && <MountainsFarBG timeState={timeState} T={T} />}
+          {biome === 'meadow'    && <MeadowFarBG    timeState={timeState} T={T} />}
         </svg>
       </div>
 
       {/* ══════════════════════════════════════════════════════════════════════
           LAYER 2 — Mid Ground  (z-index 1)
-          Hills + mid-scene trees + buildings + ground layers + atmosphere.
-          Characters (Actor Layer, z-index 2 via App.jsx) sit above this.
-          Shifts ±5 px opposite to mouse.
       ════════════════════════════════════════════════════════════════════════ */}
       <div
         className="absolute inset-0"
@@ -526,230 +326,10 @@ export default function WorldStage({ overrideHour, housingTier = 'Cardboard Box'
           className="absolute inset-0 w-full h-full"
           xmlns="http://www.w3.org/2000/svg"
         >
-          <defs>
-            <filter id="wc" x="-12%" y="-12%" width="124%" height="124%">
-              <feTurbulence type="fractalNoise" baseFrequency="0.038" numOctaves="3" seed="5" result="n" />
-              <feDisplacementMap in="SourceGraphic" in2="n" scale="7"
-                xChannelSelector="R" yChannelSelector="G" result="d" />
-              <feGaussianBlur in="d" stdDeviation="1.2" />
-            </filter>
-
-            <filter id="ff-glow" x="-200%" y="-200%" width="500%" height="500%">
-              <feGaussianBlur stdDeviation="3.5" result="b" />
-              <feMerge>
-                <feMergeNode in="b" />
-                <feMergeNode in="SourceGraphic" />
-              </feMerge>
-            </filter>
-
-            <radialGradient id="box-glow-grad" cx="50%" cy="72%" r="55%">
-              <stop offset="0%"   stopColor="#FFB040" stopOpacity="0.95" />
-              <stop offset="55%"  stopColor="#FF8020" stopOpacity="0.45" />
-              <stop offset="100%" stopColor="#FF5010" stopOpacity="0"    />
-            </radialGradient>
-          </defs>
-
-          {/* ── Far hills ── */}
-          <motion.path
-            filter="url(#wc)"
-            d="M-10,290 C55,262 148,276 250,264 C352,252 450,270 555,257 C660,244 732,262 810,257 L810,420 L-10,420 Z"
-            animate={{ fill: T.hill1 }}
-            transition={EASE}
-          />
-
-          {/* ── Mid hills ── */}
-          <motion.path
-            filter="url(#wc)"
-            d="M-10,334 C72,314 165,328 292,318 C418,308 532,326 650,316 C720,310 768,322 810,318 L810,420 L-10,420 Z"
-            animate={{ fill: T.hill2 }}
-            transition={EASE}
-          />
-
-          {/* ── Left tree ── */}
-          <motion.g
-            style={{ transformOrigin: '103px 378px' }}
-            animate={{ rotate: [0, 1.2, 0, -1.2, 0] }}
-            transition={{ duration: 9, repeat: Infinity, ease: 'easeInOut' }}
-          >
-            <motion.path
-              d="M97,378 C95,320 91,278 89,238 C94,236 102,235 110,237 C109,278 111,320 113,378 Z"
-              animate={{ fill: T.trunk }} transition={EASE}
-            />
-            <motion.path
-              filter="url(#wc)"
-              d="M42,218 C38,250 56,274 86,280 C118,286 153,272 167,244 C148,266 120,280 88,276 C58,270 42,242 42,218 Z"
-              animate={{ fill: T.canopy1s }} transition={EASE}
-            />
-            <motion.path
-              filter="url(#wc)"
-              d="M103,104 C58,100 23,137 21,178 C19,220 48,254 89,263 C130,271 167,253 180,218 C192,184 175,143 148,123 C128,108 110,104 103,104 Z"
-              animate={{ fill: T.canopy1 }} transition={EASE}
-            />
-            <motion.path
-              filter="url(#wc)"
-              d="M103,104 C77,99 50,116 40,140 C34,158 40,179 53,193 C63,162 80,138 106,123 C124,112 103,104 103,104 Z"
-              animate={{ fill: T.canopy1, opacity: 0.55 }} transition={EASE}
-            />
-          </motion.g>
-
-          {/* ── Right tree ── */}
-          <motion.g
-            style={{ transformOrigin: '703px 380px' }}
-            animate={{ rotate: [0, -1.0, 0, 1.4, 0] }}
-            transition={{ duration: 11, repeat: Infinity, ease: 'easeInOut', delay: 1.5 }}
-          >
-            <motion.path
-              d="M697,380 C695,322 691,278 689,236 C695,234 703,234 709,236 C709,278 711,322 713,380 Z"
-              animate={{ fill: T.trunk }} transition={EASE}
-            />
-            <motion.path
-              filter="url(#wc)"
-              d="M638,228 C634,260 652,283 683,291 C714,298 748,283 760,256 C740,277 712,290 683,286 C655,280 638,252 638,228 Z"
-              animate={{ fill: T.canopy2s }} transition={EASE}
-            />
-            <motion.path
-              filter="url(#wc)"
-              d="M701,96 C655,90 617,128 615,171 C613,214 642,250 683,260 C724,268 760,250 774,215 C786,182 769,140 741,119 C720,103 701,96 701,96 Z"
-              animate={{ fill: T.canopy2 }} transition={EASE}
-            />
-          </motion.g>
-
-          {/* ── Ground mid ── */}
-          <motion.path
-            filter="url(#wc)"
-            d="M-10,370 C80,352 190,365 342,358 C494,350 630,363 810,355 L810,420 L-10,420 Z"
-            animate={{ fill: T.groundMid }}
-            transition={EASE}
-          />
-
-          {/* ── Atmospheric mist ── */}
-          {MIST.map((m, i) => (
-            <motion.g
-              key={`mist${i}`}
-              animate={{
-                opacity: [m.delay % 3 === 0 ? T.mistOpacity : T.mistOpacity * 0.7, T.mistOpacity * 1.4, T.mistOpacity * 0.6, T.mistOpacity],
-                x: [0, m.spd, 0, -m.spd * 0.4, 0],
-              }}
-              transition={{ duration: 22 + i * 8, repeat: Infinity, ease: 'easeInOut', delay: m.delay }}
-            >
-              <ellipse cx={m.cx} cy={m.cy} rx={m.rx} ry={m.ry} fill="white" />
-            </motion.g>
-          ))}
-
-          {/* ── Warm ground glow ── */}
-          <motion.ellipse
-            cx={400} cy={364} rx={90} ry={60}
-            fill="url(#box-glow-grad)"
-            animate={{ opacity: T.boxGlow }}
-            transition={EASE}
-          />
-
-          {/* ── Buildings — crossfade between tiers ── */}
-          {BUILDINGS.map(({ tierName, Cmp }) => (
-            <motion.g
-              key={tierName}
-              animate={{ opacity: housingTier === tierName ? 1 : 0 }}
-              transition={EASE}
-              style={{ pointerEvents: 'none' }}
-            >
-              <Cmp T={T} EASE={EASE} />
-            </motion.g>
-          ))}
-
-          {/* ── Crisis damage — red tint + cracks ── */}
-          <motion.g
-            animate={{ opacity: isDamaged ? 1 : 0 }}
-            transition={{ duration: 1.2 }}
-            style={{ pointerEvents: 'none' }}
-          >
-            <rect x={300} y={218} width={200} height={165} fill="rgba(200,30,10,0.10)" />
-            <polyline points="382,242 371,272 387,296" fill="none" stroke="#CC1808" strokeWidth="2" strokeLinejoin="round" opacity={0.65} />
-            <polyline points="416,258 429,284 418,312" fill="none" stroke="#CC1808" strokeWidth="1.6" strokeLinejoin="round" opacity={0.55} />
-            <polyline points="396,260 390,278 401,290" fill="none" stroke="#DD2010" strokeWidth="1.2" strokeLinejoin="round" opacity={0.45} />
-          </motion.g>
-
-          {/* ── Smoke puffs (crisis only) ── */}
-          {isDamaged && [
-            { cx: 383, delay: 0   },
-            { cx: 400, delay: 0.9 },
-            { cx: 417, delay: 1.7 },
-          ].map(({ cx, delay }, i) => (
-            <motion.circle
-              key={`smk${i}`}
-              cx={cx} cy={262} r={7}
-              fill="rgba(88,78,68,0.60)"
-              initial={{ y: 0, r: 7, opacity: 0 }}
-              animate={{ y: -52, r: 18, opacity: [0, 0.55, 0] }}
-              transition={{ duration: 2.6, delay, repeat: Infinity, ease: 'easeOut' }}
-            />
-          ))}
-
-          {/* ── Ground near ── */}
-          <motion.path
-            filter="url(#wc)"
-            d="M-10,388 C82,374 202,384 372,377 C542,370 662,381 810,374 L810,420 L-10,420 Z"
-            animate={{ fill: T.groundNear }}
-            transition={EASE}
-          />
-
-          {/* ── Ground front ── */}
-          <motion.path
-            filter="url(#wc)"
-            d="M-10,406 C82,400 202,407 372,402 C542,396 662,404 810,399 L810,420 L-10,420 Z"
-            animate={{ fill: T.groundFront }}
-            transition={EASE}
-          />
-
-          {/* ── Fireflies (SLEEP) ── */}
-          {FIREFLIES.map((f, i) => (
-            <motion.g key={`ff${i}`} animate={{ opacity: T.fireflyOpacity }} transition={EASE}>
-              <motion.circle
-                cx={f.x} cy={f.y} r={2.2}
-                fill="#B8FFB0"
-                filter="url(#ff-glow)"
-                animate={{
-                  opacity: [0, 0.9, 0.2, 0.85, 0],
-                  x: [0,  7, -4,  10, -2, 0],
-                  y: [0, -10,  5, -14,  7, 0],
-                }}
-                transition={{ duration: 4.5 + f.d * 0.7, delay: f.d, repeat: Infinity, ease: 'easeInOut' }}
-              />
-            </motion.g>
-          ))}
-
-          {/* ── Ambient mood tint ── */}
-          <motion.rect
-            x={0} y={0} width={800} height={420}
-            animate={{ fill: T.ambientFill, opacity: T.ambientOpacity }}
-            transition={EASE}
-            style={{ pointerEvents: 'none' }}
-          />
-
-          {/* ── Clickable door (enter house) ── */}
-          {onEnterHouse && (
-            <g style={{ cursor: 'pointer' }} onClick={onEnterHouse}>
-              <rect x={374} y={326} width={52} height={52} fill="transparent"/>
-              <motion.ellipse
-                cx={400} cy={374} rx={30} ry={8}
-                fill="#FFE080"
-                animate={{ opacity: [0, 0.18, 0], scale: [0.9, 1.1, 0.9] }}
-                transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut' }}
-                style={{ pointerEvents: 'none' }}
-              />
-            </g>
-          )}
-
-          {/* ── State label ── */}
-          <motion.text
-            x={18} y={410}
-            fontSize="11"
-            fontFamily="Georgia, 'Times New Roman', serif"
-            letterSpacing="0.08em"
-            animate={{ fill: T.labelFill, opacity: 0.72 }}
-            transition={EASE}
-          >
-            {T.label}
-          </motion.text>
+          {biome === 'forest'    && <ForestMidBG    timeState={timeState} T={T} housingTier={housingTier} isDamaged={isDamaged} onEnterHouse={onEnterHouse} BUILDINGS={BUILDINGS} />}
+          {biome === 'port'      && <PortMidBG      timeState={timeState} T={T} housingTier={housingTier} isDamaged={isDamaged} onEnterHouse={onEnterHouse} BUILDINGS={BUILDINGS} />}
+          {biome === 'mountains' && <MountainsMidBG timeState={timeState} T={T} housingTier={housingTier} isDamaged={isDamaged} onEnterHouse={onEnterHouse} BUILDINGS={BUILDINGS} />}
+          {biome === 'meadow'    && <MeadowMidBG    timeState={timeState} T={T} housingTier={housingTier} isDamaged={isDamaged} onEnterHouse={onEnterHouse} BUILDINGS={BUILDINGS} />}
         </svg>
       </div>
 
@@ -757,14 +337,12 @@ export default function WorldStage({ overrideHour, housingTier = 'Cardboard Box'
   )
 }
 
-// ─── Foreground layer — overlaps Actor Layer for depth ────────────────────────
-// z-index 2 in App.jsx — sits above characters (Actor Layer, z-index in DOM order)
-// Shifts ±10 px opposite to mouse for maximum depth pop.
-export function ForegroundLayer({ timeState }) {
-  const T = THEMES[timeState] ?? THEMES.AWAY
+// ─── Foreground layer ─────────────────────────────────────────────────────────
+export function ForegroundLayer({ timeState, biome = 'forest' }) {
+  const T = (BIOME_THEMES[biome] ?? BIOME_THEMES.forest)[timeState] ?? {}
 
   const { nx, ny } = useMouseParallax()
-  const fgX = -(nx * 20)   // ±10 px max
+  const fgX = -(nx * 20)
   const fgY = -(ny * 20)
 
   return (
@@ -778,7 +356,7 @@ export function ForegroundLayer({ timeState }) {
         className="absolute inset-0 w-full h-full"
         xmlns="http://www.w3.org/2000/svg"
       >
-        {/* ── Left foreground foliage ── */}
+        {/* Left foreground foliage */}
         <motion.path
           d="M-20,420 C20,370 72,330 108,318 C82,342 46,370 5,420 Z"
           animate={{ fill: T.canopy1 }} transition={EASE} opacity={0.94}
@@ -796,7 +374,7 @@ export function ForegroundLayer({ timeState }) {
           animate={{ fill: T.canopy1s }} transition={EASE} opacity={0.96}
         />
 
-        {/* ── Right foreground foliage ── */}
+        {/* Right foreground foliage */}
         <motion.path
           d="M820,420 C780,370 728,330 692,318 C718,342 754,370 795,420 Z"
           animate={{ fill: T.canopy2 }} transition={EASE} opacity={0.94}
@@ -814,7 +392,7 @@ export function ForegroundLayer({ timeState }) {
           animate={{ fill: T.canopy2s }} transition={EASE} opacity={0.96}
         />
 
-        {/* ── Foreground rocks ── */}
+        {/* Foreground rocks */}
         <motion.path
           d="M0,420 C10,412 28,409 42,414 C34,419 16,421 0,420 Z"
           animate={{ fill: T.groundNear }} transition={EASE}
@@ -833,7 +411,7 @@ export function ForegroundLayer({ timeState }) {
         />
       </svg>
 
-      {/* ── Breathing vignette ── */}
+      {/* Breathing vignette */}
       <motion.div
         className="absolute inset-0"
         style={{ boxShadow: 'inset 0 0 120px rgba(0,0,0,0.55)' }}

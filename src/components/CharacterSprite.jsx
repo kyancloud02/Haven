@@ -203,6 +203,7 @@ export default function CharacterSprite({
   spriteIndex = 0,
   timeState = 'AWAY',
   totalCharacters = 6,
+  itemSlots = [],
 }) {
   const [menu,    setMenu]    = useState(null)
   const [bark,    setBark]    = useState(null)
@@ -231,8 +232,8 @@ export default function CharacterSprite({
     [baseTopPx, baseTopPx - PATH_ARC, baseTopPx],
   )
 
-  const { isOffscreen, walkDir, onDragStart: behStart, onDragEnd: behEnd } = useBehavior({
-    x, spriteIndex, totalCharacters, isDragging, isGuard,
+  const { isOffscreen, walkDir, onDragStart: behStart, onDragEnd: behEnd, isAppreciating } = useBehavior({
+    x, spriteIndex, totalCharacters, isDragging, isGuard, itemSlots,
   })
 
   useEffect(() => () => clearTimeout(barkTimer.current), [])
@@ -319,6 +320,22 @@ export default function CharacterSprite({
           </AnimatePresence>
 
           <div className="relative">
+            <AnimatePresence>
+              {isAppreciating && (
+                <motion.div
+                  key="heart"
+                  className="absolute pointer-events-none"
+                  style={{ bottom: 'calc(100% + 4px)', left: '50%', transform: 'translateX(-50%)', zIndex: 42 }}
+                  initial={{ opacity: 0, y: 0, scale: 0.4 }}
+                  animate={{ opacity: [0, 1, 1, 0], y: -28, scale: [0.4, 1.3, 1.1, 0.9] }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 2.5, ease: 'easeOut' }}
+                >
+                  <span style={{ fontSize: '1.6rem' }}>❤️</span>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             <AnimatePresence>
               {bark && (
                 <SpeechBubble

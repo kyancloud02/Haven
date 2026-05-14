@@ -293,11 +293,13 @@ export default function WorldStage({ overrideHour, housingTier = 'Cardboard Box'
           />
         ))}
 
-        {/* Sky asset */}
-        <img
+        {/* Sky asset — opacity driven by time state so day/night PNGs each shine at the right time */}
+        <motion.img
           src={`/assets/biomes/${biome}/sky.png`}
           className="absolute inset-0 w-full h-full"
-          style={{ objectFit: 'cover', mixBlendMode: 'soft-light', opacity: 0.45 }}
+          style={{ objectFit: 'cover', objectPosition: 'center top' }}
+          animate={{ opacity: T.skyImgOpacity ?? 0.45 }}
+          transition={EASE}
           alt=""
           draggable={false}
         />
@@ -310,11 +312,11 @@ export default function WorldStage({ overrideHour, housingTier = 'Cardboard Box'
         className="absolute inset-0"
         style={{ zIndex: 1, transform: `translate(${midX}px,${midY}px)`, willChange: 'transform' }}
       >
-        {/* Midground asset */}
+        {/* Midground asset — anchored to bottom so terrain horizon stays grounded */}
         <img
           src={`/assets/biomes/${biome}/midground.png`}
           className="absolute inset-0 w-full h-full"
-          style={{ objectFit: 'cover', opacity: 0.75 }}
+          style={{ objectFit: 'cover', objectPosition: 'bottom center' }}
           alt=""
           draggable={false}
         />
@@ -411,7 +413,7 @@ export function ForegroundLayer({ timeState, biome = 'forest' }) {
       <img
         src={`/assets/biomes/${biome}/foreground.png`}
         className="absolute inset-0 w-full h-full"
-        style={{ objectFit: 'cover' }}
+        style={{ objectFit: 'cover', objectPosition: 'bottom center' }}
         alt=""
         draggable={false}
       />

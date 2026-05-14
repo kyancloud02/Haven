@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
+import { motion, useMotionValue } from 'framer-motion'
 import { useGameTime, getTimeState } from '../hooks/useGameTime'
 import { BIOME_THEMES } from './BiomeContent'
 
@@ -258,7 +258,7 @@ const BUILDINGS = [
 ]
 
 // ─── Component ─────────────────────────────────────────────────────────────────
-export default function WorldStage({ overrideHour, housingTier = 'Cardboard Box', isDamaged = false, onEnterHouse, biome = 'forest' }) {
+export default function WorldStage({ overrideHour, housingTier = 'Cardboard Box', isDamaged = false, onEnterHouse, biome = 'forest', buildingPos = { x: 0, y: 0 }, onBuildingMove }) {
   const realTimeState = useGameTime()
   const timeState = overrideHour !== undefined ? getTimeState(overrideHour) : realTimeState
 
@@ -271,6 +271,10 @@ export default function WorldStage({ overrideHour, housingTier = 'Cardboard Box'
   const farY = -(ny * 4)
   const midX = -(nx * 10)
   const midY = -(ny * 10)
+
+  // Draggable building position (persisted via buildingPos prop)
+  const bx = useMotionValue(buildingPos.x)
+  const by = useMotionValue(buildingPos.y)
 
   return (
     <div className="absolute inset-0 overflow-hidden">
@@ -293,9 +297,9 @@ export default function WorldStage({ overrideHour, housingTier = 'Cardboard Box'
           />
         ))}
 
-        {/* Sky asset */}
+        {/* Background asset */}
         <img
-          src={`/assets/biomes/${biome}/sky.png`}
+          src={`/assets/biomes/${biome}/background.png`}
           className="absolute inset-0 w-full h-full"
           style={{ objectFit: 'cover', mixBlendMode: 'soft-light', opacity: 0.45 }}
           alt=""
@@ -319,7 +323,15 @@ export default function WorldStage({ overrideHour, housingTier = 'Cardboard Box'
           draggable={false}
         />
 
-        {/* Buildings + interactive overlays */}
+        {/* Buildings + interactive overlays — draggable */}
+        <motion.div
+          className="absolute inset-0"
+          style={{ x: bx, y: by, cursor: 'grab' }}
+          drag
+          dragMomentum={false}
+          whileDrag={{ cursor: 'grabbing' }}
+          onDragEnd={() => onBuildingMove?.({ x: bx.get(), y: by.get() })}
+        >
         <svg
           viewBox="0 0 800 420"
           preserveAspectRatio="xMidYMid meet"
@@ -391,6 +403,7 @@ export default function WorldStage({ overrideHour, housingTier = 'Cardboard Box'
             {T.label}
           </motion.text>
         </svg>
+        </motion.div>
       </div>
 
     </div>

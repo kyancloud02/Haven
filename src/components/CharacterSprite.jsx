@@ -204,6 +204,8 @@ export default function CharacterSprite({
   timeState = 'AWAY',
   totalCharacters = 6,
   itemSlots = [],
+  tryLockSlot,
+  releaseSlot,
 }) {
   const [menu,    setMenu]    = useState(null)
   const [bark,    setBark]    = useState(null)
@@ -234,6 +236,7 @@ export default function CharacterSprite({
 
   const { isOffscreen, walkDir, onDragStart: behStart, onDragEnd: behEnd, isAppreciating } = useBehavior({
     x, spriteIndex, totalCharacters, isDragging, isGuard, itemSlots,
+    tryLockSlot, releaseSlot, heroId: heroData.id,
   })
 
   useEffect(() => () => clearTimeout(barkTimer.current), [])

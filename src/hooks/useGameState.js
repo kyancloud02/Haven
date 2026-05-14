@@ -20,6 +20,8 @@ const DEFAULT_STATE = {
   prestigePoints:   0,          // carries over across heir restarts
   legacyGeneration: 1,          // increments each time Restart with Heir is used
   heirUnlocked:     false,      // true once Stone Manor + 3 treaties condition met
+  inventory: [],               // array of item-ID strings
+  slotItems: {},               // { slotId: itemId } — placed world items
 }
 
 function loadState() {

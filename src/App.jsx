@@ -13,10 +13,13 @@ import { useDailyReport } from './hooks/useDailyReport'
 import { useVisitor } from './hooks/useVisitor'
 import { useCrisis } from './hooks/useCrisis'
 import { useHeritage, toRoman } from './hooks/useHeritage'
+import { useBiome } from './hooks/useBiome'
 import CrisisModal from './components/CrisisModal'
 import HeirModal from './components/HeirModal'
 import { getTimeState } from './hooks/useGameTime'
 import characters from './data/characters.json'
+import PlacementOverlay from './components/PlacementOverlay'
+import { WORLD_SLOTS } from './data/slots'
 
 const IS_DEV = import.meta.env.DEV
 
@@ -94,6 +97,7 @@ export default function App() {
   const { currentVisitor, summonVisitor, dismissVisitor } = useVisitor()
   const { crisisEvent, isDamaged, triggerCrisis, dismissCrisis } = useCrisis(gameState, updateState)
   const { ageDays, eraPrestige, totalPrestige, forceUnlock, restartWithHeir } = useHeritage(gameState, updateState)
+  const [biome, setBiome] = useBiome()
   const [debugHour, setDebugHour]           = useState(() => new Date().getHours())
   const [shopOpen, setShopOpen]             = useState(false)
   const [mailboxOpen, setMailboxOpen]       = useState(false)
@@ -101,6 +105,7 @@ export default function App() {
   const [visitorModalOpen, setVisitorModalOpen] = useState(false)
   const [heirModalOpen, setHeirModalOpen]   = useState(false)
   const [isIndoor, setIsIndoor]             = useState(false)
+  const [editMode, setEditMode]             = useState(false)
 
   // Auto-open the Heir modal exactly once when the milestone is first reached
   const prevHeirUnlocked = useRef(false)
@@ -123,6 +128,20 @@ export default function App() {
 
   const effectiveTimeState = getTimeState(IS_DEV ? debugHour : new Date().getHours())
 
+  const itemSlotPositions = Object.entries(gameState.slotItems ?? {}).map(([slotId]) => {
+    const slot = WORLD_SLOTS.find(s => s.id === slotId)
+    return slot ? { x: slot.xPct * window.innerWidth } : null
+  }).filter(Boolean)
+
+  function handlePlaceItem(slotId, itemId) {
+    updateState({ slotItems: { ...(gameState.slotItems ?? {}), [slotId]: itemId } })
+  }
+  function handleRemoveItem(slotId) {
+    const next = { ...(gameState.slotItems ?? {}) }
+    delete next[slotId]
+    updateState({ slotItems: next })
+  }
+
   function closeAll() {
     setShopOpen(false)
     setMailboxOpen(false)
@@ -141,7 +160,9 @@ export default function App() {
             <InteriorStage
               onExit={() => setIsIndoor(false)}
               timeState={effectiveTimeState}
-              leaderId={gameState.currentLeaderId}
+              gameState={gameState}
+              updateState={updateState}
+              inventory={gameState.inventory ?? []}
             />
           </motion.div>
         ) : (
@@ -153,6 +174,7 @@ export default function App() {
               housingTier={gameState.housingTier}
               isDamaged={isDamaged}
               onEnterHouse={() => setIsIndoor(true)}
+              biome={biome}
             />
             {/* Outdoor characters */}
             <div className="absolute inset-0 pointer-events-none">
@@ -165,6 +187,7 @@ export default function App() {
                   spriteIndex={i}
                   timeState={effectiveTimeState}
                   totalCharacters={characters.length}
+                  itemSlots={itemSlotPositions}
                 />
               ))}
               <AnimatePresence>
@@ -177,7 +200,14 @@ export default function App() {
                 )}
               </AnimatePresence>
             </div>
-            <ForegroundLayer timeState={effectiveTimeState} />
+            <ForegroundLayer timeState={effectiveTimeState} biome={biome} />
+            <PlacementOverlay
+              editMode={editMode}
+              slotItems={gameState.slotItems ?? {}}
+              inventory={gameState.inventory ?? []}
+              onPlace={handlePlaceItem}
+              onRemove={handleRemoveItem}
+            />
           </motion.div>
         )}
       </AnimatePresence>
@@ -303,6 +333,13 @@ export default function App() {
           >
             <PersonIcon />
           </HudButton>
+
+          <HudButton
+            label={editMode ? 'Done placing' : 'Place items'}
+            onClick={() => setEditMode(e => !e)}
+          >
+            <span style={{ fontSize: '1.1rem' }}>{editMode ? '✓' : '✏️'}</span>
+          </HudButton>
         </div>
 
       </div>
@@ -345,6 +382,8 @@ export default function App() {
             eraPrestige={eraPrestige}
             totalPrestige={totalPrestige}
             onForceUnlock={forceUnlock}
+            biome={biome}
+            onBiomeChange={setBiome}
           />
         )}
       </AnimatePresence>

@@ -6,9 +6,11 @@
  * Clicking the door arc returns to the WorldStage.
  */
 
-import { useRef, useEffect, useState } from 'react'
+import { useRef, useEffect, useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import SpriteCanvas from './SpriteCanvas'
+import InteriorCharacter from './InteriorCharacter'
+import characters from '../data/characters.json'
+import dialogue from '../data/dialogue.json'
 
 const EASE = { duration: 2.2, ease: 'easeInOut' }
 
@@ -19,102 +21,119 @@ const AMBIENT = {
   SLEEP: { dark: 0.68, candle: 0.92, winLight: 0.00 },
 }
 
-// ─── Character loft colours (matches spriteGen palette) ───────────────────────
-const CHAR_C = {
-  elf_princess:    { skin: '#D8C8F0', outfit: '#E83878', hair: '#9858C0' },
-  warrior_mulan:   { skin: '#E8B880', outfit: '#D02020', hair: '#1A1010' },
-  sun_wukong:      { skin: '#E8C030', outfit: '#D06010', hair: '#D06010' },
-  sherlock_holmes: { skin: '#A8B8C8', outfit: '#303848', hair: '#202830' },
-  robin_hood:      { skin: '#98B060', outfit: '#3A6018', hair: '#3A3010' },
-  winnie_the_pooh: { skin: '#F0C828', outfit: '#E82020', hair: '#F0C828' },
-}
-
 // viewBox is landscape 800×580 — "xMidYMid meet" centres it with side bars filled
 // by the wrapper's background colour (#2E2010 warm dark).
 const VW = 800
 const VH = 580
 
-// ─── Sleeping character in loft ───────────────────────────────────────────────
-function LoftHero({ leaderId }) {
-  const c = CHAR_C[leaderId]
-  if (!c) return null
-  const isPooh = leaderId === 'winnie_the_pooh'
-  const isBear = isPooh
+// ─── SmartNode definitions ────────────────────────────────────────────────────
+const NODE_SLOTS = {
+  LOFT_BED: [
+    { svgX: 155, svgY: 260 },  // slot 0 — lies in bed when SLEEP
+    { svgX: 220, svgY: 262 },  // slot 1 — sits at loft edge
+  ],
+  DINING_TABLE: [
+    { svgX: 265, svgY: 452 },  // slot 0 — left of stump table
+    { svgX: 336, svgY: 452 },  // slot 1 — right of stump table
+  ],
+  STORAGE_SHELF: [
+    { svgX: 460, svgY: 262 },  // slot 0 — near ladder top
+    { svgX: 535, svgY: 262 },  // slot 1 — near bookshelf
+  ],
+}
 
-  // Drawn lying on the cushion, facing left, roughly centred around (178, 228)
-  return (
-    <g style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }}>
-      {/* Body */}
-      <ellipse cx={175} cy={235} rx={isPooh ? 52 : 44} ry={isPooh ? 20 : 16} fill={c.outfit} />
-      {/* Arm holding book */}
-      <ellipse cx={218} cy={218} rx={14} ry={8} fill={c.skin} transform="rotate(-28 218 218)" />
-      {/* Book */}
-      <rect x={218} y={204} width={22} height={17} rx={2} fill="#C04838" transform="rotate(-12 218 204)" />
-      <rect x={222} y={204} width={11} height={17} rx={1} fill="#A03020" transform="rotate(-12 222 204)" />
-      <line x1={221} y1={205} x2={238} y2={203} stroke="white" strokeWidth="0.8" opacity={0.4} />
-      <line x1={221} y1={208} x2={238} y2={206} stroke="white" strokeWidth="0.8" opacity={0.4} />
-      <line x1={221} y1={211} x2={238} y2={209} stroke="white" strokeWidth="0.8" opacity={0.4} />
-      {/* Head */}
-      <circle cx={120} cy={228} r={isBear ? 22 : 18} fill={c.skin} />
-      {/* Bear ears */}
-      {isBear && <>
-        <circle cx={102} cy={210} r={8} fill={c.skin} />
-        <circle cx={102} cy={210} r={5} fill="#E0A848" />
-        <circle cx={136} cy={208} r={8} fill={c.skin} />
-        <circle cx={136} cy={208} r={5} fill="#E0A848" />
-      </>}
-      {/* Elf ears */}
-      {leaderId === 'elf_princess' && <>
-        <ellipse cx={104} cy={222} rx={6} ry={12} fill={c.skin} transform="rotate(-25 104 222)" />
-        <ellipse cx={136} cy={220} rx={6} ry={12} fill={c.skin} transform="rotate(15 136 220)" />
-      </>}
-      {/* Eye (closed — sleeping) */}
-      <path d="M112,226 Q120,223 128,226" fill="none" stroke="#3A2810" strokeWidth="2" strokeLinecap="round" />
-      {/* Snout for bear */}
-      {isBear && <ellipse cx={120} cy={236} rx={10} ry={7} fill="#F8E8A0" />}
-      {/* Hair / headband */}
-      {leaderId === 'warrior_mulan' && (
-        <path d="M104,216 C108,210 116,208 120,208 C124,208 132,210 136,216" fill={c.hair} stroke={c.hair} strokeWidth="4" strokeLinecap="round" fill-opacity="0" />
-      )}
-      {leaderId === 'sun_wukong' && (
-        <ellipse cx={120} cy={218} rx={17} ry={6} fill="#FFD040" opacity={0.85} />
-      )}
-      {leaderId === 'sherlock_holmes' && (
-        <path d="M104,219 C108,212 120,210 136,218 L138,215 C122,205 108,207 102,216 Z" fill={c.hair} />
-      )}
-      {/* Pillow under head */}
-      <ellipse cx={100} cy={235} rx={30} ry={12} fill="#F0E8D8" opacity={0.6} />
-    </g>
-  )
+const NODE_SCALE = {
+  LOFT_BED:      0.72,
+  DINING_TABLE:  0.82,
+  STORAGE_SHELF: 0.72,
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
-export default function InteriorStage({ onExit, timeState = 'AWAY', leaderId = null }) {
+export default function InteriorStage({ onExit, timeState = 'AWAY', gameState = {}, updateState = () => {}, inventory = [] }) {
   const amb = AMBIENT[timeState] ?? AMBIENT.AWAY
   const svgRef = useRef(null)
 
-  // Compute overlay position for the sprite-canvas hero at table (optional)
-  const [tablePos, setTablePos] = useState(null)
+  // Inventory checks
+  const hasOilLamp     = inventory.includes('oil_lamp')
+  const hasWarmBlanket = inventory.includes('warm_blanket')
+  const hasHoneyPot    = inventory.includes('honey_pot')
+  const hasBoots       = inventory.includes('leather_boots')
+  const hasScythe      = inventory.includes('rusty_scythe')
 
+  // ── Layout: SVG → screen coordinate mapping ──────────────────────────────────
+  const [layout, setLayout] = useState(null)
   useEffect(() => {
     function calc() {
       const el = svgRef.current
       if (!el) return
-      const r     = el.getBoundingClientRect()
-      const scale = Math.min(r.width / VW, r.height / VH)
-      const ox    = (r.width  - VW * scale) / 2
-      const oy    = (r.height - VH * scale) / 2
-      // Table top in SVG: x≈390, y≈478
-      setTablePos({
-        left: r.left + ox + 390 * scale,
-        top:  r.top  + oy + 458 * scale,
-        scale,
-      })
+      const r  = el.getBoundingClientRect()
+      const sc = Math.min(r.width / VW, r.height / VH)
+      const ox = (r.width  - VW * sc) / 2
+      const oy = (r.height - VH * sc) / 2
+      setLayout({ ox: r.left + ox, oy: r.top + oy, scale: sc })
     }
     calc()
     window.addEventListener('resize', calc)
     return () => window.removeEventListener('resize', calc)
   }, [])
+
+  function toScreen(svgX, svgY) {
+    if (!layout) return null
+    return { left: layout.ox + svgX * layout.scale, top: layout.oy + svgY * layout.scale }
+  }
+
+  // ── SmartNode assignment: shuffled once per house visit ───────────────────────
+  const nodeAssignment = useMemo(() => {
+    const shuffled = [...characters].sort(() => Math.random() - 0.5)
+    const nodeKeys = Object.keys(NODE_SLOTS)
+    const result   = {}
+    shuffled.forEach((char, i) => {
+      result[char.id] = { nodeKey: nodeKeys[Math.floor(i / 2)], slotIdx: i % 2 }
+    })
+    return result
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // ── Improv conversation ticker ────────────────────────────────────────────────
+  const [convo, setConvo] = useState(null)
+  const timerA = useRef(null)
+  const timerB = useRef(null)
+  const timerC = useRef(null)
+
+  useEffect(() => {
+    function fireConvo() {
+      const ai = Math.floor(Math.random() * characters.length)
+      let bi   = Math.floor(Math.random() * (characters.length - 1))
+      if (bi >= ai) bi++
+      const a = characters[ai], b = characters[bi]
+      const la = dialogue[a.id]?.[timeState] ?? []
+      const lb = dialogue[b.id]?.[timeState] ?? []
+      if (!la.length || !lb.length) { scheduleNext(); return }
+      const speakerText = la[Math.floor(Math.random() * la.length)]
+      const replyText   = lb[Math.floor(Math.random() * lb.length)]
+      setConvo({ speakerId: a.id, replyId: b.id, phase: 'speak', speakerText, replyText })
+      timerB.current = setTimeout(() => {
+        setConvo(prev => prev ? { ...prev, phase: 'reply' } : null)
+        timerC.current = setTimeout(() => { setConvo(null); scheduleNext() }, 4500)
+      }, 3500)
+    }
+    function scheduleNext() {
+      timerA.current = setTimeout(fireConvo, 12000 + Math.random() * 10000)
+    }
+    timerA.current = setTimeout(fireConvo, 7000 + Math.random() * 5000)
+    return () => {
+      clearTimeout(timerA.current)
+      clearTimeout(timerB.current)
+      clearTimeout(timerC.current)
+    }
+  }, [timeState])
+
+  function getConvoBark(heroId) {
+    if (!convo) return null
+    if (convo.phase === 'speak' && convo.speakerId === heroId) return convo.speakerText
+    if (convo.phase === 'reply' && convo.replyId   === heroId) return convo.replyText
+    return null
+  }
 
   return (
     <div className="absolute inset-0" style={{ background: '#2E2010' }}>
@@ -159,6 +178,10 @@ export default function InteriorStage({ onExit, timeState = 'AWAY', leaderId = n
             <stop offset="55%"  stopColor="transparent"/>
             <stop offset="100%" stopColor="rgba(0,0,0,0.60)"/>
           </radialGradient>
+          {/* Blanket clip */}
+          <clipPath id="ic-blanket-clip">
+            <path d="M172,240 C192,236 230,234 268,238 L268,262 L172,262 Z"/>
+          </clipPath>
         </defs>
 
         {/* ══ BACKGROUND WALL ══════════════════════════════════════════════════ */}
@@ -173,11 +196,6 @@ export default function InteriorStage({ onExit, timeState = 'AWAY', leaderId = n
         <path d="M130,270 Q400,252 670,270 L670,580 L130,580 Z" fill="#B8A880" opacity={0.28}/>
 
         {/* ══ LEFT PILLAR (carved tree trunk) ════════════════════════════════ */}
-        {/* Root flare at base */}
-        <path d="M0,520 C-2,545 -4,565 -6,580 L88,580 C86,565 84,545 82,520 C76,498 70,480 64,475 L20,475 C14,480 6,498 0,520 Z"
-          fill="#5A3010"/>
-        <path d="M4,522 C2,548 0,568 -2,580 L82,580 C80,568 78,548 76,522 C70,500 64,482 60,478 L24,478 C18,482 12,500 4,522 Z"
-          fill="#7B4820"/>
         {/* Main trunk */}
         <path d="M8,0 C4,100 2,240 4,360 C6,460 8,530 10,580 L68,580 C70,530 72,460 72,360 C72,240 70,100 64,0 Z"
           fill="#7B4820"/>
@@ -268,6 +286,28 @@ export default function InteriorStage({ onExit, timeState = 'AWAY', leaderId = n
         {/* Shelf unit outline */}
         <rect x={480} y={64} width={94} height={204} rx={3} fill="none" stroke="#5A3810" strokeWidth="1.5" opacity={0.45}/>
 
+        {/* ══ HONEY POT on bookshelf (row 3 overlay) ═══════════════════════ */}
+        {hasHoneyPot && (
+          <motion.g initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+            {/* cover some jars */}
+            <rect x={538} y={154} width={36} height={42} fill="#D4C4A0"/>
+            {/* pot body */}
+            <ellipse cx={556} cy={182} rx={17} ry={20} fill="#E8A030"/>
+            {/* pot neck */}
+            <ellipse cx={556} cy={163} rx={11} ry={7} fill="#F0B840"/>
+            {/* lid */}
+            <ellipse cx={556} cy={158} rx={13} ry={5} fill="#D09020"/>
+            <ellipse cx={556} cy={157} rx={9}  ry={3} fill="#E8C030"/>
+            {/* label area */}
+            <rect x={543} y={172} width={26} height={14} rx={2} fill="#C87820" opacity={0.50}/>
+            {/* honey drip */}
+            <path d="M569,178 C572,186 572,194 570,194 C568,194 568,186 571,178 Z" fill="#F0C040" opacity={0.80}/>
+            {/* dipper */}
+            <line x1={562} y1={157} x2={576} y2={142} stroke="#8A6020" strokeWidth="2.5" strokeLinecap="round"/>
+            <circle cx={577} cy={140} r={5} fill="#D09030"/>
+          </motion.g>
+        )}
+
         {/* ══ LOFT PLATFORM ════════════════════════════════════════════════════ */}
         {/* Top face */}
         <path d="M75,262 L576,262 L576,280 C576,282 574,284 572,284 L78,284 C76,284 75,282 75,280 Z"
@@ -297,15 +337,35 @@ export default function InteriorStage({ onExit, timeState = 'AWAY', leaderId = n
         {/* Pillow */}
         <rect x={92} y={210} width={70} height={30} rx={8} fill="#F0E8D8"/>
         <path d="M96,214 C112,211 145,212 158,215 Z" fill="white" opacity={0.50}/>
-        {/* Blanket */}
-        <path d="M172,240 C192,236 230,234 268,238 L268,262 L172,262 Z" fill="#C04838" opacity={0.82}/>
-        <path d="M172,240 C192,236 230,234 268,238" fill="none" stroke="#A03020" strokeWidth="2" opacity={0.45}/>
+
+        {/* ══ BLANKET (conditional — warm stripes or basic) ══════════════════ */}
+        {hasWarmBlanket ? (
+          <g>
+            <g clipPath="url(#ic-blanket-clip)">
+              <rect x={168} y={234} width={106} height={32} fill="#C03028"/>
+              {/* coloured stripes */}
+              <rect x={176} y={234} width={9} height={32} fill="#E06040" opacity={0.72}/>
+              <rect x={191} y={234} width={7} height={32} fill="#F0C030" opacity={0.68}/>
+              <rect x={203} y={234} width={9} height={32} fill="#4880C8" opacity={0.68}/>
+              <rect x={217} y={234} width={7} height={32} fill="#50A840" opacity={0.66}/>
+              <rect x={229} y={234} width={9} height={32} fill="#E06040" opacity={0.65}/>
+              <rect x={243} y={234} width={7} height={32} fill="#F0C030" opacity={0.62}/>
+              <rect x={255} y={234} width={9} height={32} fill="#4880C8" opacity={0.60}/>
+            </g>
+            <path d="M172,240 C192,236 230,234 268,238" fill="none" stroke="#A03020" strokeWidth="1.8" opacity={0.38}/>
+          </g>
+        ) : (
+          <>
+            <path d="M172,240 C192,236 230,234 268,238 L268,262 L172,262 Z" fill="#C04838" opacity={0.82}/>
+            <path d="M172,240 C192,236 230,234 268,238" fill="none" stroke="#A03020" strokeWidth="2" opacity={0.45}/>
+          </>
+        )}
+
         {/* Bed legs */}
         <rect x={89}  y={260} width={10} height={6} rx={2} fill="#5A3010"/>
         <rect x={260} y={260} width={10} height={6} rx={2} fill="#5A3010"/>
 
-        {/* ══ HERO SLEEPING IN LOFT ══════════════════════════════════════════ */}
-        {leaderId && <LoftHero leaderId={leaderId}/>}
+        {/* Sleeping characters handled by InteriorCharacter DOM overlays */}
 
         {/* Small scroll on bed */}
         <rect x={136} y={209} width={6} height={14} rx={2} fill="#E8D8A8"/>
@@ -385,26 +445,85 @@ export default function InteriorStage({ onExit, timeState = 'AWAY', leaderId = n
         {/* Stump highlight */}
         <ellipse cx={286} cy={447} rx={16} ry={6} fill="#C08040" opacity={0.32}/>
 
-        {/* ══ CANDLE ON STUMP ═══════════════════════════════════════════════ */}
-        <rect x={296} y={422} width={8} height={28} rx={2} fill="#E8E0C8"/>
-        <rect x={294} y={448} width={12} height={5} rx={1} fill="#C8B898"/>
-        {/* Wick */}
-        <line x1={300} y1={423} x2={300} y2={418} stroke="#1A0C04" strokeWidth="1.5"/>
-        {/* Flame */}
+        {/* ══ CANDLE ON STUMP (with CSS glow filter) ════════════════════════ */}
         <motion.g
-          animate={{ scaleY:[1,1.18,0.90,1.10,1], scaleX:[1,0.88,1.06,0.92,1] }}
-          style={{ transformOrigin:'300px 420px' }}
-          transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}>
-          <path d="M300,404 C304,408 306,415 302,422 C298,415 294,408 298,404 C297,410 300,417 300,422 C300,417 303,410 300,404 Z"
-            fill="#FFB030"/>
-          <path d="M300,408 C302,413 303,417 301,422 C299,417 297,413 299,408 C299,414 300,418 300,422 C300,418 301,414 300,408 Z"
-            fill="#FFE080" opacity={0.90}/>
+          animate={{
+            filter: [
+              'drop-shadow(0 0 3px rgba(255,155,0,0.50))',
+              'drop-shadow(0 0 13px rgba(255,210,60,0.90)) drop-shadow(0 0 5px rgba(255,130,0,0.95))',
+              'drop-shadow(0 0 5px rgba(255,175,0,0.62)) drop-shadow(0 0 2px rgba(255,120,0,0.80))',
+              'drop-shadow(0 0 15px rgba(255,200,40,0.86)) drop-shadow(0 0 4px rgba(255,150,0,0.90))',
+              'drop-shadow(0 0 3px rgba(255,155,0,0.50))',
+            ]
+          }}
+          transition={{ duration: 2.8, repeat: Infinity, ease: 'easeInOut' }}
+        >
+          {/* Candle body */}
+          <rect x={296} y={422} width={8} height={28} rx={2} fill="#E8E0C8"/>
+          <rect x={294} y={448} width={12} height={5} rx={1} fill="#C8B898"/>
+          {/* Wick */}
+          <line x1={300} y1={423} x2={300} y2={418} stroke="#1A0C04" strokeWidth="1.5"/>
+          {/* Flame */}
+          <motion.g
+            animate={{ scaleY:[1,1.18,0.90,1.10,1], scaleX:[1,0.88,1.06,0.92,1] }}
+            style={{ transformOrigin:'300px 420px' }}
+            transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}>
+            <path d="M300,404 C304,408 306,415 302,422 C298,415 294,408 298,404 C297,410 300,417 300,422 C300,417 303,410 300,404 Z"
+              fill="#FFB030"/>
+            <path d="M300,408 C302,413 303,417 301,422 C299,417 297,413 299,408 C299,414 300,418 300,422 C300,418 301,414 300,408 Z"
+              fill="#FFE080" opacity={0.90}/>
+          </motion.g>
+          {/* Candle glow circle */}
+          <motion.circle cx={300} cy={413} r={55}
+            fill="url(#ic-candle)"
+            animate={{ opacity:[amb.candle*0.80,amb.candle,amb.candle*0.72,amb.candle*0.92,amb.candle*0.80] }}
+            transition={{ duration: 2.3, repeat: Infinity, ease: 'easeInOut' }}/>
         </motion.g>
-        {/* Candle glow */}
-        <motion.circle cx={300} cy={413} r={55}
-          fill="url(#ic-candle)"
-          animate={{ opacity:[amb.candle*0.80,amb.candle,amb.candle*0.72,amb.candle*0.92,amb.candle*0.80] }}
-          transition={{ duration: 2.3, repeat: Infinity, ease: 'easeInOut' }}/>
+
+        {/* ══ OIL LAMP on stump table ═══════════════════════════════════════ */}
+        {hasOilLamp && (
+          <motion.g
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.6 }}
+            style={{ filter: 'drop-shadow(0 0 6px rgba(255,160,0,0.6))' }}
+          >
+            {/* saucer base */}
+            <ellipse cx={252} cy={449} rx={20} ry={7} fill="#9A6820"/>
+            {/* oil reservoir body */}
+            <path d="M235,449 C235,436 243,430 252,430 C261,430 270,436 270,449 Z" fill="#C8903A"/>
+            {/* handle (right side) */}
+            <path d="M270,445 C278,440 282,435 280,430 C276,428 268,430 266,437"
+              fill="none" stroke="#A07020" strokeWidth="3.5" strokeLinecap="round"/>
+            {/* spout (left, pointing lower-left) */}
+            <path d="M235,447 C226,445 222,443 218,440 C220,435 227,435 234,440 Z" fill="#A87028"/>
+            {/* wick line */}
+            <line x1={218} y1={440} x2={218} y2={434} stroke="#4A2808" strokeWidth="1.5" strokeLinecap="round"/>
+            {/* spout flame */}
+            <motion.path
+              d="M218,432 C221,427 223,422 220,418 C217,422 215,427 217,432 C216,425 218,421 218,418 C218,421 220,425 218,432 Z"
+              fill="#FFB030"
+              animate={{ scaleY:[1,1.2,0.88,1.1,1], scaleX:[1,0.85,1.06,0.90,1] }}
+              style={{ transformOrigin:'218px 430px' }}
+              transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+            />
+            <motion.path
+              d="M218,428 C220,424 221,421 219,418 C217,421 216,424 217,428 Z"
+              fill="#FFE080" opacity={0.9}
+              animate={{ scaleY:[1,1.15,0.90,1.08,1] }}
+              style={{ transformOrigin:'218px 426px' }}
+              transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+            />
+            {/* lamp glow */}
+            <motion.circle cx={218} cy={422} r={38} fill="url(#ic-candle)"
+              animate={{ opacity:[amb.candle*0.65, amb.candle*0.90, amb.candle*0.60, amb.candle*0.85, amb.candle*0.65] }}
+              transition={{ duration: 2.1, repeat: Infinity, ease: 'easeInOut' }}/>
+            {/* second candle-glow circle */}
+            <motion.circle cx={228} cy={434} r={65} fill="url(#ic-candle)"
+              animate={{ opacity:[amb.candle*0.40, amb.candle*0.55, amb.candle*0.38, amb.candle*0.50, amb.candle*0.40] }}
+              transition={{ duration: 2.5, repeat: Infinity, ease: 'easeInOut' }}/>
+          </motion.g>
+        )}
 
         {/* ══ ROCKS SCATTERED ══════════════════════════════════════════════ */}
         {[
@@ -430,6 +549,22 @@ export default function InteriorStage({ onExit, timeState = 'AWAY', leaderId = n
         <line x1={443} y1={432} x2={443} y2={454} stroke="#5A3010" strokeWidth="1" opacity={0.40}/>
         <line x1={426} y1={444} x2={456} y2={444} stroke="#5A3010" strokeWidth="1" opacity={0.40}/>
         <line x1={430} y1={466} x2={464} y2={466} stroke="#5A3010" strokeWidth="1" opacity={0.40}/>
+
+        {/* ══ LEATHER BOOTS near exit door ══════════════════════════════════ */}
+        {hasBoots && (
+          <motion.g initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+            {/* left boot */}
+            <path d="M612,540 L612,516 C612,508 616,504 620,504 C624,504 626,508 626,515 L636,516 C641,516 643,522 641,534 L612,540 Z"
+              fill="#8A4820"/>
+            <ellipse cx={626} cy={538} rx={15} ry={6} fill="#6A3410"/>
+            {/* boot shine */}
+            <path d="M614,514 C617,510 621,508 622,511 Z" fill="white" opacity={0.18}/>
+            {/* right boot (slightly overlapping, offset) */}
+            <path d="M627,542 L627,518 C627,510 631,506 635,506 C639,506 641,510 641,517 L649,518 C654,518 655,524 653,536 L627,542 Z"
+              fill="#9A5228" opacity={0.90}/>
+            <ellipse cx={640} cy={540} rx={14} ry={5} fill="#7A4018" opacity={0.90}/>
+          </motion.g>
+        )}
 
         {/* ══ EXIT DOOR ════════════════════════════════════════════════════ */}
         {/* Door surround / frame recess */}
@@ -471,6 +606,38 @@ export default function InteriorStage({ onExit, timeState = 'AWAY', leaderId = n
           style={{ cursor: 'pointer' }}
           onClick={onExit}/>
 
+        {/* ══ RUSTY SCYTHE against pillar ══════════════════════════════════ */}
+        {hasScythe && (
+          <motion.g
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6 }}
+            transform="rotate(-18, 90, 500)"
+          >
+            {/* handle */}
+            <rect x={84} y={298} width={8} height={208} rx={3} fill="#8A6030"/>
+            <rect x={85} y={298} width={3} height={208} rx={1} fill="#B07840" opacity={0.50}/>
+            {/* ferule cap */}
+            <rect x={82} y={295} width={12} height={7} rx={2} fill="#7A8080"/>
+            {/* blade */}
+            <path d="M92,308 C116,284 152,285 168,304 C148,294 116,296 92,318 Z" fill="#9A9898"/>
+            <path d="M92,308 C116,284 152,285 168,304" fill="none" stroke="#707878" strokeWidth="2.5" opacity={0.75}/>
+            {/* rust patches on blade */}
+            <path d="M110,295 C116,292 120,294 118,298 C114,296 110,297 110,295 Z" fill="#B04820" opacity={0.55}/>
+            <path d="M136,293 C141,291 145,293 143,297 C139,295 136,296 136,293 Z" fill="#B04820" opacity={0.45}/>
+            {/* handle wrap near top */}
+            {[310,326,342].map((y,i) => (
+              <rect key={i} x={83} y={y} width={10} height={4} rx={1} fill="#6A4820" opacity={0.6}/>
+            ))}
+          </motion.g>
+        )}
+
+        {/* ══ ROOT FLARE at pillar base ═════════════════════════════════════ */}
+        <path d="M0,520 C-2,545 -4,565 -6,580 L88,580 C86,565 84,545 82,520 C76,498 70,480 64,475 L20,475 C14,480 6,498 0,520 Z"
+          fill="#5A3010"/>
+        <path d="M4,522 C2,548 0,568 -2,580 L82,580 C80,568 78,548 76,522 C70,500 64,482 60,478 L24,478 C18,482 12,500 4,522 Z"
+          fill="#7B4820"/>
+
         {/* ══ RUG / CARPET ══════════════════════════════════════════════════ */}
         <ellipse cx={300} cy={536} rx={80} ry={22} fill="#C03828" opacity={0.52}/>
         <ellipse cx={300} cy={536} rx={66} ry={17} fill="#E05040" opacity={0.28}/>
@@ -493,6 +660,14 @@ export default function InteriorStage({ onExit, timeState = 'AWAY', leaderId = n
           transition={EASE}
           style={{ pointerEvents: 'none' }}/>
 
+        {/* Oil lamp bloom (shows through night overlay) */}
+        {hasOilLamp && (
+          <motion.circle cx={218} cy={422} r={140} fill="url(#ic-candle)"
+            animate={{ opacity: amb.candle * 0.35 }}
+            transition={EASE}
+            style={{ pointerEvents: 'none' }}/>
+        )}
+
         {/* Candle glow bloom (stronger at night) */}
         <motion.circle cx={300} cy={413} r={200}
           fill="url(#ic-candle)"
@@ -513,27 +688,27 @@ export default function InteriorStage({ onExit, timeState = 'AWAY', leaderId = n
           style={{ pointerEvents: 'none' }}/>
       </svg>
 
-      {/* ── Second character sits at the table (SpriteCanvas over SVG) ── */}
-      <AnimatePresence>
-        {tablePos && leaderId && (
-          <motion.div
-            key="table-hero"
-            className="pointer-events-none"
-            style={{
-              position: 'fixed',
-              left:      tablePos.left,
-              top:       tablePos.top,
-              transform: `translate(-50%, -100%) scale(${tablePos.scale * 0.72})`,
-              transformOrigin: 'bottom center',
-            }}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 0.88 }}
-            exit={{ opacity: 0 }}
-          >
-            <SpriteCanvas characterId={leaderId} animation="talk" scale={1}/>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* ── Interior character overlays (SmartNode system) ── */}
+      {characters.map(hero => {
+        const assign = nodeAssignment[hero.id]
+        if (!assign) return null
+        const slot = NODE_SLOTS[assign.nodeKey]?.[assign.slotIdx]
+        if (!slot) return null
+        return (
+          <InteriorCharacter
+            key={hero.id}
+            heroData={hero}
+            gameState={gameState}
+            updateState={updateState}
+            screenPos={toScreen(slot.svgX, slot.svgY)}
+            nodeKey={assign.nodeKey}
+            slotIdx={assign.slotIdx}
+            timeState={timeState}
+            conversationBark={getConvoBark(hero.id)}
+            spriteScale={NODE_SCALE[assign.nodeKey]}
+          />
+        )
+      })}
 
       {/* ── "Go outside" prompt on hover ── */}
       <div

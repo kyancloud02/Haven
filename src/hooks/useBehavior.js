@@ -15,13 +15,14 @@ const WALK_SPEED = 80    // px / second
 
 function rand(lo, hi) { return lo + Math.random() * (hi - lo) }
 
-export function useBehavior({ x, spriteIndex, totalCharacters, isDragging, isGuard }) {
+export function useBehavior({ x, spriteIndex, totalCharacters, isDragging, isGuard, itemSlots = [] }) {
   const stateRef = useRef('boot')
   const timerRef = useRef(null)
   const stopRef  = useRef(null)   // cancels the current tween
 
-  const [isOffscreen, setIsOffscreen] = useState(false)
-  const [walkDir,     setWalkDir]     = useState(null)  // 'left' | 'right' | null
+  const [isOffscreen,    setIsOffscreen]    = useState(false)
+  const [walkDir,        setWalkDir]        = useState(null)  // 'left' | 'right' | null
+  const [isAppreciating, setIsAppreciating] = useState(false)
 
   // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -68,6 +69,20 @@ export function useBehavior({ x, spriteIndex, totalCharacters, isDragging, isGua
     const w    = W()
 
     if (s === 'idle') {
+      // Prioritise item slots: characters are drawn to placed items
+      if (itemSlots.length > 0 && Math.random() < 0.40) {
+        const target = itemSlots[Math.floor(Math.random() * itemSlots.length)]
+        stateRef.current = 'wandering'
+        moveTo(target.x, () => {
+          setIsAppreciating(true)
+          timerRef.current = setTimeout(() => {
+            setIsAppreciating(false)
+            schedule('idle', rand(2_000, 5_000))
+          }, 2_500)
+        })
+        return
+      }
+
       const roll = Math.random()
 
       if (roll < 0.11) {
@@ -144,5 +159,5 @@ export function useBehavior({ x, spriteIndex, totalCharacters, isDragging, isGua
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isGuard])
 
-  return { isOffscreen, walkDir, onDragStart, onDragEnd }
+  return { isOffscreen, walkDir, onDragStart, onDragEnd, isAppreciating }
 }

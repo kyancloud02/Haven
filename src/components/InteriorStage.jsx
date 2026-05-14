@@ -48,60 +48,6 @@ const NODE_SCALE = {
   STORAGE_SHELF: 0.72,
 }
 
-// ─── Sleeping character in loft (legacy single-hero SVG — kept for reference) ─
-function LoftHero({ leaderId }) {
-  const c = CHAR_C[leaderId]
-  if (!c) return null
-  const isPooh = leaderId === 'winnie_the_pooh'
-  const isBear = isPooh
-
-  // Drawn lying on the cushion, facing left, roughly centred around (178, 228)
-  return (
-    <g style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))' }}>
-      {/* Body */}
-      <ellipse cx={175} cy={235} rx={isPooh ? 52 : 44} ry={isPooh ? 20 : 16} fill={c.outfit} />
-      {/* Arm holding book */}
-      <ellipse cx={218} cy={218} rx={14} ry={8} fill={c.skin} transform="rotate(-28 218 218)" />
-      {/* Book */}
-      <rect x={218} y={204} width={22} height={17} rx={2} fill="#C04838" transform="rotate(-12 218 204)" />
-      <rect x={222} y={204} width={11} height={17} rx={1} fill="#A03020" transform="rotate(-12 222 204)" />
-      <line x1={221} y1={205} x2={238} y2={203} stroke="white" strokeWidth="0.8" opacity={0.4} />
-      <line x1={221} y1={208} x2={238} y2={206} stroke="white" strokeWidth="0.8" opacity={0.4} />
-      <line x1={221} y1={211} x2={238} y2={209} stroke="white" strokeWidth="0.8" opacity={0.4} />
-      {/* Head */}
-      <circle cx={120} cy={228} r={isBear ? 22 : 18} fill={c.skin} />
-      {/* Bear ears */}
-      {isBear && <>
-        <circle cx={102} cy={210} r={8} fill={c.skin} />
-        <circle cx={102} cy={210} r={5} fill="#E0A848" />
-        <circle cx={136} cy={208} r={8} fill={c.skin} />
-        <circle cx={136} cy={208} r={5} fill="#E0A848" />
-      </>}
-      {/* Elf ears */}
-      {leaderId === 'elf_princess' && <>
-        <ellipse cx={104} cy={222} rx={6} ry={12} fill={c.skin} transform="rotate(-25 104 222)" />
-        <ellipse cx={136} cy={220} rx={6} ry={12} fill={c.skin} transform="rotate(15 136 220)" />
-      </>}
-      {/* Eye (closed — sleeping) */}
-      <path d="M112,226 Q120,223 128,226" fill="none" stroke="#3A2810" strokeWidth="2" strokeLinecap="round" />
-      {/* Snout for bear */}
-      {isBear && <ellipse cx={120} cy={236} rx={10} ry={7} fill="#F8E8A0" />}
-      {/* Hair / headband */}
-      {leaderId === 'warrior_mulan' && (
-        <path d="M104,216 C108,210 116,208 120,208 C124,208 132,210 136,216" fill={c.hair} stroke={c.hair} strokeWidth="4" strokeLinecap="round" fillOpacity="0" />
-      )}
-      {leaderId === 'sun_wukong' && (
-        <ellipse cx={120} cy={218} rx={17} ry={6} fill="#FFD040" opacity={0.85} />
-      )}
-      {leaderId === 'sherlock_holmes' && (
-        <path d="M104,219 C108,212 120,210 136,218 L138,215 C122,205 108,207 102,216 Z" fill={c.hair} />
-      )}
-      {/* Pillow under head */}
-      <ellipse cx={100} cy={235} rx={30} ry={12} fill="#F0E8D8" opacity={0.6} />
-    </g>
-  )
-}
-
 // ─── Main component ───────────────────────────────────────────────────────────
 export default function InteriorStage({ onExit, timeState = 'AWAY', gameState = {}, updateState = () => {}, inventory = [] }) {
   const amb = AMBIENT[timeState] ?? AMBIENT.AWAY

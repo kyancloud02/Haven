@@ -402,8 +402,8 @@ export default function WorldStage({ overrideHour, housingTier = 'Cardboard Box'
 // ─── Foreground layer ─────────────────────────────────────────────────────────
 export function ForegroundLayer({ timeState, biome = 'forest' }) {
   const { nx, ny } = useMouseParallax()
-  const fgX = -(nx * 20)
-  const fgY = -(ny * 20)
+  const fgX = -(nx * 4)
+  const fgY = -(ny * 4)
 
   return (
     <div

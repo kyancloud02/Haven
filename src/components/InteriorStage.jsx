@@ -6,9 +6,11 @@
  * Clicking the door arc returns to the WorldStage.
  */
 
-import { useRef, useEffect, useState } from 'react'
+import { useRef, useEffect, useState, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import SpriteCanvas from './SpriteCanvas'
+import InteriorCharacter from './InteriorCharacter'
+import characters from '../data/characters.json'
+import dialogue from '../data/dialogue.json'
 
 const EASE = { duration: 2.2, ease: 'easeInOut' }
 
@@ -19,28 +21,34 @@ const AMBIENT = {
   SLEEP: { dark: 0.68, candle: 0.92, winLight: 0.00 },
 }
 
-// ─── Hero SVG placement by time state ────────────────────────────────────────
-const HERO_POINTS = {
-  HOME: { svgX: 296, svgY: 450 },   // at the stump table
-  AWAY: { svgX: 483, svgY: 240 },   // at the bookshelf
-}
-
-// ─── Character loft colours (matches spriteGen palette) ───────────────────────
-const CHAR_C = {
-  elf_princess:    { skin: '#D8C8F0', outfit: '#E83878', hair: '#9858C0' },
-  warrior_mulan:   { skin: '#E8B880', outfit: '#D02020', hair: '#1A1010' },
-  sun_wukong:      { skin: '#E8C030', outfit: '#D06010', hair: '#D06010' },
-  sherlock_holmes: { skin: '#A8B8C8', outfit: '#303848', hair: '#202830' },
-  robin_hood:      { skin: '#98B060', outfit: '#3A6018', hair: '#3A3010' },
-  winnie_the_pooh: { skin: '#F0C828', outfit: '#E82020', hair: '#F0C828' },
-}
-
 // viewBox is landscape 800×580 — "xMidYMid meet" centres it with side bars filled
 // by the wrapper's background colour (#2E2010 warm dark).
 const VW = 800
 const VH = 580
 
-// ─── Sleeping character in loft ───────────────────────────────────────────────
+// ─── SmartNode definitions ────────────────────────────────────────────────────
+const NODE_SLOTS = {
+  LOFT_BED: [
+    { svgX: 155, svgY: 260 },  // slot 0 — lies in bed when SLEEP
+    { svgX: 220, svgY: 262 },  // slot 1 — sits at loft edge
+  ],
+  DINING_TABLE: [
+    { svgX: 265, svgY: 452 },  // slot 0 — left of stump table
+    { svgX: 336, svgY: 452 },  // slot 1 — right of stump table
+  ],
+  STORAGE_SHELF: [
+    { svgX: 460, svgY: 262 },  // slot 0 — near ladder top
+    { svgX: 535, svgY: 262 },  // slot 1 — near bookshelf
+  ],
+}
+
+const NODE_SCALE = {
+  LOFT_BED:      0.72,
+  DINING_TABLE:  0.82,
+  STORAGE_SHELF: 0.72,
+}
+
+// ─── Sleeping character in loft (legacy single-hero SVG — kept for reference) ─
 function LoftHero({ leaderId }) {
   const c = CHAR_C[leaderId]
   if (!c) return null
@@ -95,7 +103,7 @@ function LoftHero({ leaderId }) {
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
-export default function InteriorStage({ onExit, timeState = 'AWAY', leaderId = null, inventory = [] }) {
+export default function InteriorStage({ onExit, timeState = 'AWAY', gameState = {}, updateState = () => {}, inventory = [] }) {
   const amb = AMBIENT[timeState] ?? AMBIENT.AWAY
   const svgRef = useRef(null)
 
@@ -106,30 +114,80 @@ export default function InteriorStage({ onExit, timeState = 'AWAY', leaderId = n
   const hasBoots       = inventory.includes('leather_boots')
   const hasScythe      = inventory.includes('rusty_scythe')
 
-  // Compute overlay position for the sprite-canvas hero
-  const [heroPos, setHeroPos] = useState(null)
-
+  // ── Layout: SVG → screen coordinate mapping ──────────────────────────────────
+  const [layout, setLayout] = useState(null)
   useEffect(() => {
     function calc() {
       const el = svgRef.current
       if (!el) return
-      const r = el.getBoundingClientRect()
-      const scale = Math.min(r.width / VW, r.height / VH)
-      const ox = (r.width - VW * scale) / 2
-      const oy = (r.height - VH * scale) / 2
-      const pt = HERO_POINTS[timeState]
-      if (!pt) { setHeroPos(null); return }
-      setHeroPos({ left: r.left + ox + pt.svgX * scale, top: r.top + oy + pt.svgY * scale, scale })
+      const r  = el.getBoundingClientRect()
+      const sc = Math.min(r.width / VW, r.height / VH)
+      const ox = (r.width  - VW * sc) / 2
+      const oy = (r.height - VH * sc) / 2
+      setLayout({ ox: r.left + ox, oy: r.top + oy, scale: sc })
     }
     calc()
     window.addEventListener('resize', calc)
     return () => window.removeEventListener('resize', calc)
+  }, [])
+
+  function toScreen(svgX, svgY) {
+    if (!layout) return null
+    return { left: layout.ox + svgX * layout.scale, top: layout.oy + svgY * layout.scale }
+  }
+
+  // ── SmartNode assignment: shuffled once per house visit ───────────────────────
+  const nodeAssignment = useMemo(() => {
+    const shuffled = [...characters].sort(() => Math.random() - 0.5)
+    const nodeKeys = Object.keys(NODE_SLOTS)
+    const result   = {}
+    shuffled.forEach((char, i) => {
+      result[char.id] = { nodeKey: nodeKeys[Math.floor(i / 2)], slotIdx: i % 2 }
+    })
+    return result
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // ── Improv conversation ticker ────────────────────────────────────────────────
+  const [convo, setConvo] = useState(null)
+  const timerA = useRef(null)
+  const timerB = useRef(null)
+  const timerC = useRef(null)
+
+  useEffect(() => {
+    function fireConvo() {
+      const ai = Math.floor(Math.random() * characters.length)
+      let bi   = Math.floor(Math.random() * (characters.length - 1))
+      if (bi >= ai) bi++
+      const a = characters[ai], b = characters[bi]
+      const la = dialogue[a.id]?.[timeState] ?? []
+      const lb = dialogue[b.id]?.[timeState] ?? []
+      if (!la.length || !lb.length) { scheduleNext(); return }
+      const speakerText = la[Math.floor(Math.random() * la.length)]
+      const replyText   = lb[Math.floor(Math.random() * lb.length)]
+      setConvo({ speakerId: a.id, replyId: b.id, phase: 'speak', speakerText, replyText })
+      timerB.current = setTimeout(() => {
+        setConvo(prev => prev ? { ...prev, phase: 'reply' } : null)
+        timerC.current = setTimeout(() => { setConvo(null); scheduleNext() }, 4500)
+      }, 3500)
+    }
+    function scheduleNext() {
+      timerA.current = setTimeout(fireConvo, 12000 + Math.random() * 10000)
+    }
+    timerA.current = setTimeout(fireConvo, 7000 + Math.random() * 5000)
+    return () => {
+      clearTimeout(timerA.current)
+      clearTimeout(timerB.current)
+      clearTimeout(timerC.current)
+    }
   }, [timeState])
 
-  // Hero display conditions
-  const showLoftHero  = !!leaderId && timeState === 'SLEEP'
-  const showTableHero = !!leaderId && timeState === 'HOME'
-  const showShelfHero = !!leaderId && timeState === 'AWAY'
+  function getConvoBark(heroId) {
+    if (!convo) return null
+    if (convo.phase === 'speak' && convo.speakerId === heroId) return convo.speakerText
+    if (convo.phase === 'reply' && convo.replyId   === heroId) return convo.replyText
+    return null
+  }
 
   return (
     <div className="absolute inset-0" style={{ background: '#2E2010' }}>
@@ -361,8 +419,7 @@ export default function InteriorStage({ onExit, timeState = 'AWAY', leaderId = n
         <rect x={89}  y={260} width={10} height={6} rx={2} fill="#5A3010"/>
         <rect x={260} y={260} width={10} height={6} rx={2} fill="#5A3010"/>
 
-        {/* ══ HERO SLEEPING IN LOFT ══════════════════════════════════════════ */}
-        {showLoftHero && <LoftHero leaderId={leaderId}/>}
+        {/* Sleeping characters handled by InteriorCharacter DOM overlays */}
 
         {/* Small scroll on bed */}
         <rect x={136} y={209} width={6} height={14} rx={2} fill="#E8D8A8"/>
@@ -685,32 +742,27 @@ export default function InteriorStage({ onExit, timeState = 'AWAY', leaderId = n
           style={{ pointerEvents: 'none' }}/>
       </svg>
 
-      {/* ── Hero overlay (DOM positioned over SVG) ── */}
-      <AnimatePresence mode="wait">
-        {heroPos && (showTableHero || showShelfHero) && (
-          <motion.div
-            key={`hero-${timeState}`}
-            className="pointer-events-none"
-            style={{
-              position: 'fixed',
-              left: heroPos.left,
-              top: heroPos.top,
-              transform: `translate(-50%, -100%) scale(${heroPos.scale * 0.72})`,
-              transformOrigin: 'bottom center',
-            }}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 0.90, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.45 }}
-          >
-            <SpriteCanvas
-              characterId={leaderId}
-              animation={timeState === 'HOME' ? 'talk' : 'idle'}
-              scale={1}
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* ── Interior character overlays (SmartNode system) ── */}
+      {characters.map(hero => {
+        const assign = nodeAssignment[hero.id]
+        if (!assign) return null
+        const slot = NODE_SLOTS[assign.nodeKey]?.[assign.slotIdx]
+        if (!slot) return null
+        return (
+          <InteriorCharacter
+            key={hero.id}
+            heroData={hero}
+            gameState={gameState}
+            updateState={updateState}
+            screenPos={toScreen(slot.svgX, slot.svgY)}
+            nodeKey={assign.nodeKey}
+            slotIdx={assign.slotIdx}
+            timeState={timeState}
+            conversationBark={getConvoBark(hero.id)}
+            spriteScale={NODE_SCALE[assign.nodeKey]}
+          />
+        )
+      })}
 
       {/* ── "Go outside" prompt on hover ── */}
       <div

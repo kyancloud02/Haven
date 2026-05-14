@@ -141,7 +141,8 @@ export default function App() {
             <InteriorStage
               onExit={() => setIsIndoor(false)}
               timeState={effectiveTimeState}
-              leaderId={gameState.currentLeaderId}
+              gameState={gameState}
+              updateState={updateState}
               inventory={gameState.inventory ?? []}
             />
           </motion.div>

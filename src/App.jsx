@@ -189,8 +189,8 @@ export default function App() {
               buildingPos={gameState.buildingPos ?? { x: 0, y: 0 }}
               onBuildingMove={pos => updateState({ buildingPos: pos })}
             />
-            {/* Outdoor characters */}
-            <div className="absolute inset-0 pointer-events-none">
+            {/* Outdoor characters — z:3 keeps them above the foreground layer (z:2) */}
+            <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 3 }}>
               {characters.map((hero, i) => (
                 <CharacterSprite
                   key={hero.id}

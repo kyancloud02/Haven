@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { motion, AnimatePresence, useMotionValue, useTransform, animate } from 'framer-motion'
 import { CHARACTER_ACCENT } from './CharacterSprites'
 import SpriteCanvas from './SpriteCanvas'
+import ImageSpriteCanvas from './ImageSpriteCanvas'
 import { useBehavior } from '../hooks/useBehavior'
 import dialogue from '../data/dialogue.json'
 
@@ -355,11 +356,19 @@ export default function CharacterSprite({
               isGuard  ? { filter: 'drop-shadow(0 0 12px rgba(58,112,216,0.85))' } :
               {}
             }>
-              <SpriteCanvas
-                characterId={heroData.id}
-                animation={getAnimation()}
-                scale={1}
-              />
+              {heroData.spriteSheet
+                ? <ImageSpriteCanvas
+                    src={`/assets/props/characters/${heroData.sprite}`}
+                    spriteSheet={heroData.spriteSheet}
+                    animation={getAnimation()}
+                    scale={1}
+                  />
+                : <SpriteCanvas
+                    characterId={heroData.id}
+                    animation={getAnimation()}
+                    scale={1}
+                  />
+              }
             </div>
           </div>
 

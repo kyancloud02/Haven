@@ -61,6 +61,8 @@ export default function SpriteCanvas({ characterId, animation = 'idle', scale = 
     const assetImg = new Image()
     assetImg.onload = () => {
       if (cancelled) return
+      // Asset loaded — clear any stale procedural cache for this character
+      try { localStorage.removeItem(`sprite_${characterId}`) } catch {}
       frameSizeRef.current = {
         w: assetImg.naturalWidth  / SHEET_COLS,
         h: assetImg.naturalHeight / SHEET_ROWS,

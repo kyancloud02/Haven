@@ -21,7 +21,20 @@
     "id": "sherlock_holmes",
     "name": "Sherlock Holmes",
     "sprite": "sherlock_holmes.png",
-    "permittedRoles": ["Diplomat", "Explorer"]
+    "permittedRoles": ["Diplomat", "Explorer"],
+    "spriteSheet": {
+      "frameW": 184,
+      "frameH": 240,
+      "anims": {
+        "walk_down":  { "row": 0, "frames": 6, "fps": 8  },
+        "walk_left":  { "row": 1, "frames": 6, "fps": 10 },
+        "walk_right": { "row": 2, "frames": 6, "fps": 10 },
+        "walk_up":    { "row": 3, "frames": 2, "fps": 8  },
+        "idle":       { "row": 0, "frames": 1, "fps": 4  },
+        "talk":       { "row": 0, "frames": 2, "fps": 6  },
+        "blink":      { "row": 0, "frames": 1, "fps": 3  }
+      }
+    }
   },
   {
     "id": "robin_hood",

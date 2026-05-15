@@ -18,6 +18,7 @@ import CrisisModal from './components/CrisisModal'
 import HeirModal from './components/HeirModal'
 import { getTimeState } from './hooks/useGameTime'
 import characters from './data/characters.json'
+import dialogue from './data/dialogue.json'
 import PlacementOverlay from './components/PlacementOverlay'
 import { WORLD_SLOTS } from './data/slots'
 
@@ -106,6 +107,10 @@ export default function App() {
   const [heirModalOpen, setHeirModalOpen]   = useState(false)
   const [isIndoor, setIsIndoor]             = useState(false)
   const [editMode, setEditMode]             = useState(false)
+  const [insideCharIds, setInsideCharIds]   = useState(new Set())
+  const insideCharIdsRef                    = useRef(new Set())
+  const [outdoorConvo, setOutdoorConvo]     = useState(null)
+  const convoTimers                         = useRef({})
 
   // Auto-open the Heir modal exactly once when the milestone is first reached
   const prevHeirUnlocked = useRef(false)
@@ -144,6 +149,56 @@ export default function App() {
     delete lockedSlotsRef.current[slotId]
   }, [])
 
+  const handleIndoorChange = useCallback((charId, isNowInside) => {
+    const next = new Set(insideCharIdsRef.current)
+    if (isNowInside) next.add(charId)
+    else next.delete(charId)
+    insideCharIdsRef.current = next
+    setInsideCharIds(next)
+  }, [])
+
+  // Outdoor conversation ticker — fires every 15-40 s while outside
+  useEffect(() => {
+    if (isIndoor) { setOutdoorConvo(null); return }
+
+    const r = (lo, hi) => lo + Math.random() * (hi - lo)
+
+    function fireConvo() {
+      const outdoor = characters.filter(c => !insideCharIdsRef.current.has(c.id))
+      if (outdoor.length < 2) { scheduleNext(); return }
+      const [a, b] = [...outdoor].sort(() => Math.random() - 0.5)
+      const la = dialogue[a.id]?.[effectiveTimeState] ?? []
+      const lb = dialogue[b.id]?.[effectiveTimeState] ?? []
+      if (!la.length || !lb.length) { scheduleNext(); return }
+      setOutdoorConvo({
+        speakerId:   a.id,
+        replyId:     b.id,
+        phase:       'speak',
+        speakerText: la[Math.floor(Math.random() * la.length)],
+        replyText:   lb[Math.floor(Math.random() * lb.length)],
+      })
+      convoTimers.current.reply = setTimeout(() => {
+        setOutdoorConvo(prev => prev ? { ...prev, phase: 'reply' } : null)
+        convoTimers.current.end = setTimeout(() => {
+          setOutdoorConvo(null)
+          scheduleNext()
+        }, 5_000)
+      }, 4_500)
+    }
+
+    function scheduleNext() {
+      convoTimers.current.main = setTimeout(fireConvo, r(15_000, 40_000))
+    }
+
+    scheduleNext()
+    return () => {
+      clearTimeout(convoTimers.current.main)
+      clearTimeout(convoTimers.current.reply)
+      clearTimeout(convoTimers.current.end)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isIndoor, effectiveTimeState])
+
   function handlePlaceItem(slotId, itemId) {
     updateState({ slotItems: { ...(gameState.slotItems ?? {}), [slotId]: itemId } })
   }
@@ -174,6 +229,7 @@ export default function App() {
               gameState={gameState}
               updateState={updateState}
               inventory={gameState.inventory ?? []}
+              insideCharIds={insideCharIds}
             />
           </motion.div>
         ) : (
@@ -203,6 +259,12 @@ export default function App() {
                   itemSlots={itemSlotPositions}
                   tryLockSlot={tryLockSlot}
                   releaseSlot={releaseSlot}
+                  conversationBark={
+                    outdoorConvo?.phase === 'speak' && outdoorConvo.speakerId === hero.id ? outdoorConvo.speakerText :
+                    outdoorConvo?.phase === 'reply' && outdoorConvo.replyId   === hero.id ? outdoorConvo.replyText   :
+                    null
+                  }
+                  onIndoorChange={handleIndoorChange}
                 />
               ))}
               <AnimatePresence>

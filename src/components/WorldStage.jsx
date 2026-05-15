@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { motion, useMotionValue } from 'framer-motion'
+import { motion, useMotionValue, useDragControls } from 'framer-motion'
 import { useGameTime, getTimeState } from '../hooks/useGameTime'
 import { BIOME_THEMES } from './BiomeContent'
 
@@ -234,9 +234,9 @@ export default function WorldStage({ overrideHour, housingTier = 'Cardboard Box'
   const biomeThemes = BIOME_THEMES[biome] ?? BIOME_THEMES.forest
   const T = biomeThemes[timeState] ?? biomeThemes.AWAY
 
-  // Draggable building position (persisted via buildingPos prop)
   const bx = useMotionValue(buildingPos.x)
   const by = useMotionValue(buildingPos.y)
+  const buildingDragControls = useDragControls()
 
   return (
     <div className="absolute inset-0 overflow-hidden">
@@ -281,13 +281,14 @@ export default function WorldStage({ overrideHour, housingTier = 'Cardboard Box'
           draggable={false}
         />
 
-        {/* Buildings + interactive overlays — draggable */}
+        {/* Buildings + interactive overlays */}
         <motion.div
           className="absolute inset-0"
-          style={{ x: bx, y: by, cursor: 'grab' }}
+          style={{ x: bx, y: by }}
           drag
+          dragControls={buildingDragControls}
+          dragListener={false}
           dragMomentum={false}
-          whileDrag={{ cursor: 'grabbing' }}
           onDragEnd={() => onBuildingMove?.({ x: bx.get(), y: by.get() })}
         >
         <svg
@@ -334,6 +335,14 @@ export default function WorldStage({ overrideHour, housingTier = 'Cardboard Box'
               transition={{ duration: 2.6, delay, repeat: Infinity, ease: 'easeOut' }}
             />
           ))}
+
+          {/* Drag handle — only building footprint initiates drag */}
+          <rect
+            x={300} y={180} width={200} height={200}
+            fill="rgba(0,0,0,0)"
+            style={{ cursor: 'grab' }}
+            onPointerDown={(e) => buildingDragControls.start(e)}
+          />
 
           {/* Door hit area */}
           {onEnterHouse && (

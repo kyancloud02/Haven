@@ -1,32 +1,26 @@
-/**
- * useBehavior — autonomous character AI.
- *
- * Drives a character through idle → wander → leave → offscreen → return states
- * using Framer Motion's standalone animate() on the shared `x` MotionValue.
- * Pauses while the user is dragging. Guard mode overrides everything and walks
- * the character to the right-edge guard post.
- */
-
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { animate } from 'framer-motion'
 
-const SPRITE_W   = 64    // px — matches FRAME in spriteGen
-const WALK_SPEED = 80    // px / second
+const SPRITE_W   = 64
+const WALK_SPEED = 80
 
 function rand(lo, hi) { return lo + Math.random() * (hi - lo) }
 
-export function useBehavior({ x, spriteIndex, totalCharacters, isDragging, isGuard, itemSlots = [], tryLockSlot, releaseSlot, heroId }) {
-  const stateRef = useRef('boot')
-  const timerRef = useRef(null)
-  const stopRef  = useRef(null)   // cancels the current tween
+export function useBehavior({ x, spriteIndex, totalCharacters, isDragging, isGuard, itemSlots = [], tryLockSlot, releaseSlot, heroId, conversationBark }) {
+  const stateRef       = useRef('boot')
+  const timerRef       = useRef(null)
+  const stopRef        = useRef(null)
+  const convoBarkRef   = useRef(conversationBark)
 
   const [isOffscreen,    setIsOffscreen]    = useState(false)
-  const [walkDir,        setWalkDir]        = useState(null)  // 'left' | 'right' | null
+  const [isInside,       setIsInside]       = useState(false)
+  const [walkDir,        setWalkDir]        = useState(null)
   const [isAppreciating, setIsAppreciating] = useState(false)
 
-  // ── helpers ──────────────────────────────────────────────────────────────────
+  useEffect(() => { convoBarkRef.current = conversationBark }, [conversationBark])
 
-  const W = () => window.innerWidth
+  const W     = () => window.innerWidth
+  const doorX = () => W() * 0.5 - SPRITE_W / 2
 
   function randTarget() {
     const w = W()
@@ -58,8 +52,6 @@ export function useBehavior({ x, spriteIndex, totalCharacters, isDragging, isGua
     stopRef.current = () => ctrl.stop()
   }
 
-  // ── state machine ─────────────────────────────────────────────────────────────
-
   function tick() {
     if (isDragging.current)           { schedule('idle', 800); return }
     if (stateRef.current === 'guard') { return }
@@ -69,10 +61,13 @@ export function useBehavior({ x, spriteIndex, totalCharacters, isDragging, isGua
     const w    = W()
 
     if (s === 'idle') {
-      // Prioritise item slots: characters are drawn to placed items (one at a time)
+      // Pause when an outdoor conversation is happening
+      if (convoBarkRef.current) { schedule('idle', 3_000); return }
+
+      // Item slot appreciation (40% chance when slots are placed)
       if (itemSlots.length > 0 && Math.random() < 0.40) {
         const shuffled = [...itemSlots].sort(() => Math.random() - 0.5)
-        const target = shuffled.find(s => !tryLockSlot || tryLockSlot(s.slotId, heroId))
+        const target = shuffled.find(sl => !tryLockSlot || tryLockSlot(sl.slotId, heroId))
         if (target) {
           stateRef.current = 'wandering'
           moveTo(target.x, () => {
@@ -80,8 +75,8 @@ export function useBehavior({ x, spriteIndex, totalCharacters, isDragging, isGua
             timerRef.current = setTimeout(() => {
               setIsAppreciating(false)
               releaseSlot?.(target.slotId)
-              schedule('idle', rand(2_000, 5_000))
-            }, 2_500)
+              schedule('idle', rand(8_000, 18_000))
+            }, rand(3_000, 7_000))
           })
           return
         }
@@ -89,39 +84,53 @@ export function useBehavior({ x, spriteIndex, totalCharacters, isDragging, isGua
 
       const roll = Math.random()
 
-      if (roll < 0.11) {
+      if (roll < 0.05) {
+        // Enter the house — walk to door then go inside
+        stateRef.current = 'going_inside'
+        moveTo(doorX(), () => {
+          setIsInside(true)
+          setWalkDir(null)
+          schedule('inside', rand(90_000, 240_000))
+        })
+
+      } else if (roll < 0.10) {
         // Leave the village — walk off whichever edge is closer
         stateRef.current = 'leaving'
         const goRight = curX >= w / 2
         moveTo(goRight ? w + SPRITE_W + 30 : -(SPRITE_W * 2 + 30), () => {
           setIsOffscreen(true)
-          schedule('returning', rand(12_000, 35_000))
+          schedule('returning', rand(120_000, 300_000))
         })
 
-      } else if (roll < 0.58) {
-        // Wander to a random spot within the village
+      } else if (roll < 0.38) {
+        // Wander to a random spot
         stateRef.current = 'wandering'
-        moveTo(randTarget(), () => schedule('idle', rand(2_500, 7_500)))
+        moveTo(randTarget(), () => schedule('idle', rand(10_000, 22_000)))
 
       } else {
         // Linger — stay and breathe
-        schedule('idle', rand(3_000, 9_000))
+        schedule('idle', rand(12_000, 30_000))
       }
 
+    } else if (s === 'inside') {
+      // Exit the house — appear at door and walk out
+      x.set(doorX())
+      setIsInside(false)
+      stateRef.current = 'coming_outside'
+      moveTo(randTarget(), () => schedule('idle', rand(5_000, 12_000)))
+
     } else if (s === 'returning') {
-      // Re-enter from a random edge
+      // Re-enter from a random screen edge
       const fromRight = Math.random() > 0.5
       x.set(fromRight ? w + SPRITE_W : -(SPRITE_W * 2))
       setIsOffscreen(false)
       stateRef.current = 'entering'
-      moveTo(randTarget(), () => schedule('idle', rand(2_000, 5_000)))
+      moveTo(randTarget(), () => schedule('idle', rand(5_000, 12_000)))
     }
   }
 
-  // ── mount ─────────────────────────────────────────────────────────────────────
-
+  // Mount — stagger startup so characters don't all move at once
   useEffect(() => {
-    // Stagger startup so characters don't all decide to leave at once
     timerRef.current = setTimeout(() => {
       stateRef.current = 'idle'
       tick()
@@ -131,14 +140,14 @@ export function useBehavior({ x, spriteIndex, totalCharacters, isDragging, isGua
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // ── guard mode ────────────────────────────────────────────────────────────────
-
+  // Guard mode
   useEffect(() => {
     if (isGuard) {
       clearTimeout(timerRef.current)
       stopAnim()
       setWalkDir(null)
       setIsOffscreen(false)
+      setIsInside(false)
       const ctrl = animate(x, W() * 0.92 - SPRITE_W, { duration: 1.6, ease: 'easeOut' })
       stopRef.current = () => ctrl.stop()
       stateRef.current = 'guard'
@@ -147,8 +156,6 @@ export function useBehavior({ x, spriteIndex, totalCharacters, isDragging, isGua
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isGuard])
-
-  // ── drag callbacks (called by CharacterSprite) ────────────────────────────────
 
   const onDragStart = useCallback(() => {
     clearTimeout(timerRef.current)
@@ -163,5 +170,5 @@ export function useBehavior({ x, spriteIndex, totalCharacters, isDragging, isGua
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isGuard])
 
-  return { isOffscreen, walkDir, onDragStart, onDragEnd, isAppreciating }
+  return { isOffscreen, isInside, walkDir, onDragStart, onDragEnd, isAppreciating }
 }

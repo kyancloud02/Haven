@@ -49,7 +49,7 @@ const NODE_SCALE = {
 }
 
 // ─── Main component ───────────────────────────────────────────────────────────
-export default function InteriorStage({ onExit, timeState = 'AWAY', gameState = {}, updateState = () => {}, inventory = [] }) {
+export default function InteriorStage({ onExit, timeState = 'AWAY', gameState = {}, updateState = () => {}, inventory = [], insideCharIds }) {
   const amb = AMBIENT[timeState] ?? AMBIENT.AWAY
   const svgRef = useRef(null)
 
@@ -81,6 +81,11 @@ export default function InteriorStage({ onExit, timeState = 'AWAY', gameState = 
     if (!layout) return null
     return { left: layout.ox + svgX * layout.scale, top: layout.oy + svgY * layout.scale }
   }
+
+  // Only show characters that are currently inside (or all if none tracked yet)
+  const visibleChars = insideCharIds && insideCharIds.size > 0
+    ? characters.filter(c => insideCharIds.has(c.id))
+    : []
 
   // ── SmartNode assignment: shuffled once per house visit ───────────────────────
   const nodeAssignment = useMemo(() => {
@@ -689,7 +694,7 @@ export default function InteriorStage({ onExit, timeState = 'AWAY', gameState = 
       </svg>
 
       {/* ── Interior character overlays (SmartNode system) ── */}
-      {characters.map(hero => {
+      {visibleChars.map(hero => {
         const assign = nodeAssignment[hero.id]
         if (!assign) return null
         const slot = NODE_SLOTS[assign.nodeKey]?.[assign.slotIdx]

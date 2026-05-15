@@ -29,10 +29,11 @@ function SpeechBubble({ heroData, text, onDismiss }) {
       animate={{ opacity: 1, y: 0,  scale: 1   }}
       exit={{ opacity: 0, y: 4, scale: 0.92 }}
       transition={{ duration: 0.2 }}
-      onClick={e => { e.stopPropagation(); onDismiss() }}
+      onClick={e => { e.stopPropagation(); onDismiss?.() }}
     >
       <div
-        className="rounded-2xl px-3 pt-2 pb-2.5 cursor-pointer"
+        className="rounded-2xl px-3 pt-2 pb-2.5"
+        style={{ cursor: onDismiss ? 'pointer' : 'default' }}
         style={{
           background:     'rgba(12,10,8,0.92)',
           backdropFilter: 'blur(12px)',
@@ -207,6 +208,8 @@ export default function CharacterSprite({
   itemSlots = [],
   tryLockSlot,
   releaseSlot,
+  conversationBark = null,
+  onIndoorChange,
 }) {
   const [menu,    setMenu]    = useState(null)
   const [bark,    setBark]    = useState(null)
@@ -235,10 +238,16 @@ export default function CharacterSprite({
     [baseTopPx, baseTopPx - PATH_ARC, baseTopPx],
   )
 
-  const { isOffscreen, walkDir, onDragStart: behStart, onDragEnd: behEnd, isAppreciating } = useBehavior({
+  const { isOffscreen, isInside, walkDir, onDragStart: behStart, onDragEnd: behEnd, isAppreciating } = useBehavior({
     x, spriteIndex, totalCharacters, isDragging, isGuard, itemSlots,
-    tryLockSlot, releaseSlot, heroId: heroData.id,
+    tryLockSlot, releaseSlot, heroId: heroData.id, conversationBark,
   })
+
+  const isFirstMount = useRef(true)
+  useEffect(() => {
+    if (isFirstMount.current) { isFirstMount.current = false; return }
+    onIndoorChange?.(heroData.id, isInside)
+  }, [isInside, heroData.id, onIndoorChange])
 
   useEffect(() => () => clearTimeout(barkTimer.current), [])
 
@@ -298,8 +307,8 @@ export default function CharacterSprite({
           zIndex:        dragging ? 100 : 1,
           userSelect:    'none',
           touchAction:   'none',
-          pointerEvents: isOffscreen ? 'none' : 'auto',
-          opacity:       isOffscreen ? 0 : 1,
+          pointerEvents: isOffscreen || isInside ? 'none' : 'auto',
+          opacity:       isOffscreen || isInside ? 0 : 1,
         }}
         onDragStart={() => {
           isDragging.current = true
@@ -341,12 +350,12 @@ export default function CharacterSprite({
             </AnimatePresence>
 
             <AnimatePresence>
-              {bark && (
+              {(bark || conversationBark) && (
                 <SpeechBubble
                   key="bubble"
                   heroData={heroData}
-                  text={bark}
-                  onDismiss={() => { clearTimeout(barkTimer.current); setBark(null) }}
+                  text={bark || conversationBark}
+                  onDismiss={bark ? () => { clearTimeout(barkTimer.current); setBark(null) } : undefined}
                 />
               )}
             </AnimatePresence>

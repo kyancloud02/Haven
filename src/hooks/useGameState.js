@@ -22,6 +22,7 @@ const DEFAULT_STATE = {
   heirUnlocked:     false,      // true once Stone Manor + 3 treaties condition met
   inventory: [],               // array of item-ID strings
   slotItems: {},               // { slotId: itemId } — placed world items
+  buildingPos: { x: 0, y: 0 }, // draggable building offset in px
 }
 
 function loadState() {

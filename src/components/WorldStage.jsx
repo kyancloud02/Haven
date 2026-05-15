@@ -1,40 +1,9 @@
-import { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
+import { useEffect } from 'react'
+import { motion, useMotionValue } from 'framer-motion'
 import { useGameTime, getTimeState } from '../hooks/useGameTime'
 import { BIOME_THEMES } from './BiomeContent'
 
 const EASE = { duration: 2.5, ease: 'easeInOut' }
-
-// ─── Mouse parallax hook ───────────────────────────────────────────────────────
-function useMouseParallax() {
-  const [pos, setPos] = useState({ nx: 0, ny: 0 })
-  useEffect(() => {
-    let target = { nx: 0, ny: 0 }
-    let rafId
-    function onMove(e) {
-      target = {
-        nx: e.clientX / window.innerWidth  - 0.5,
-        ny: e.clientY / window.innerHeight - 0.5,
-      }
-    }
-    function tick() {
-      setPos(prev => {
-        const nx = prev.nx + (target.nx - prev.nx) * 0.07
-        const ny = prev.ny + (target.ny - prev.ny) * 0.07
-        if (Math.abs(nx - prev.nx) < 0.0005 && Math.abs(ny - prev.ny) < 0.0005) return prev
-        return { nx, ny }
-      })
-      rafId = requestAnimationFrame(tick)
-    }
-    window.addEventListener('mousemove', onMove, { passive: true })
-    rafId = requestAnimationFrame(tick)
-    return () => {
-      window.removeEventListener('mousemove', onMove)
-      cancelAnimationFrame(rafId)
-    }
-  }, [])
-  return pos
-}
 
 // ─── Buildings ─────────────────────────────────────────────────────────────────
 
@@ -258,19 +227,16 @@ const BUILDINGS = [
 ]
 
 // ─── Component ─────────────────────────────────────────────────────────────────
-export default function WorldStage({ overrideHour, housingTier = 'Cardboard Box', isDamaged = false, onEnterHouse, biome = 'forest' }) {
+export default function WorldStage({ overrideHour, housingTier = 'Cardboard Box', isDamaged = false, onEnterHouse, biome = 'forest', buildingPos = { x: 0, y: 0 }, onBuildingMove }) {
   const realTimeState = useGameTime()
   const timeState = overrideHour !== undefined ? getTimeState(overrideHour) : realTimeState
 
   const biomeThemes = BIOME_THEMES[biome] ?? BIOME_THEMES.forest
   const T = biomeThemes[timeState] ?? biomeThemes.AWAY
 
-  // Parallax
-  const { nx, ny } = useMouseParallax()
-  const farX = -(nx * 4)
-  const farY = -(ny * 4)
-  const midX = -(nx * 10)
-  const midY = -(ny * 10)
+  // Draggable building position (persisted via buildingPos prop)
+  const bx = useMotionValue(buildingPos.x)
+  const by = useMotionValue(buildingPos.y)
 
   return (
     <div className="absolute inset-0 overflow-hidden">
@@ -278,10 +244,7 @@ export default function WorldStage({ overrideHour, housingTier = 'Cardboard Box'
       {/* ══════════════════════════════════════════════════════════════════════
           LAYER 1 — Far Background  (z-index 0)
       ════════════════════════════════════════════════════════════════════════ */}
-      <div
-        className="absolute inset-0"
-        style={{ zIndex: 0, transform: `translate(${farX}px,${farY}px)`, willChange: 'transform' }}
-      >
+      <div className="absolute inset-0" style={{ zIndex: 0 }}>
         {/* Sky gradient crossfade between time states */}
         {Object.entries(biomeThemes).map(([state, th]) => (
           <motion.div
@@ -293,9 +256,9 @@ export default function WorldStage({ overrideHour, housingTier = 'Cardboard Box'
           />
         ))}
 
-        {/* Sky asset — opacity driven by time state so day/night PNGs each shine at the right time */}
+        {/* Background asset */}
         <motion.img
-          src={`/assets/biomes/${biome}/sky.png`}
+          src={`/assets/biomes/${biome}/background.png`}
           className="absolute inset-0 w-full h-full"
           style={{ objectFit: 'cover', objectPosition: 'center top' }}
           animate={{ opacity: T.skyImgOpacity ?? 0.45 }}
@@ -308,11 +271,8 @@ export default function WorldStage({ overrideHour, housingTier = 'Cardboard Box'
       {/* ══════════════════════════════════════════════════════════════════════
           LAYER 2 — Mid Ground  (z-index 1)
       ════════════════════════════════════════════════════════════════════════ */}
-      <div
-        className="absolute inset-0"
-        style={{ zIndex: 1, transform: `translate(${midX}px,${midY}px)`, willChange: 'transform' }}
-      >
-        {/* Midground asset — anchored to bottom so terrain horizon stays grounded */}
+      <div className="absolute inset-0" style={{ zIndex: 1 }}>
+        {/* Midground asset */}
         <img
           src={`/assets/biomes/${biome}/midground.png`}
           className="absolute inset-0 w-full h-full"
@@ -321,7 +281,15 @@ export default function WorldStage({ overrideHour, housingTier = 'Cardboard Box'
           draggable={false}
         />
 
-        {/* Buildings + interactive overlays */}
+        {/* Buildings + interactive overlays — draggable */}
+        <motion.div
+          className="absolute inset-0"
+          style={{ x: bx, y: by, cursor: 'grab' }}
+          drag
+          dragMomentum={false}
+          whileDrag={{ cursor: 'grabbing' }}
+          onDragEnd={() => onBuildingMove?.({ x: bx.get(), y: by.get() })}
+        >
         <svg
           viewBox="0 0 800 420"
           preserveAspectRatio="xMidYMid meet"
@@ -393,6 +361,7 @@ export default function WorldStage({ overrideHour, housingTier = 'Cardboard Box'
             {T.label}
           </motion.text>
         </svg>
+        </motion.div>
       </div>
 
     </div>
@@ -401,15 +370,8 @@ export default function WorldStage({ overrideHour, housingTier = 'Cardboard Box'
 
 // ─── Foreground layer ─────────────────────────────────────────────────────────
 export function ForegroundLayer({ timeState, biome = 'forest' }) {
-  const { nx, ny } = useMouseParallax()
-  const fgX = -(nx * 4)
-  const fgY = -(ny * 4)
-
   return (
-    <div
-      className="absolute inset-0 pointer-events-none"
-      style={{ zIndex: 2, transform: `translate(${fgX}px,${fgY}px)`, willChange: 'transform' }}
-    >
+    <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 2 }}>
       <img
         src={`/assets/biomes/${biome}/foreground.png`}
         className="absolute inset-0 w-full h-full"

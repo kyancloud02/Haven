@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { AnimatePresence, motion } from 'framer-motion'
 import WorldStage, { ForegroundLayer } from './components/WorldStage'
 import InteriorStage from './components/InteriorStage'
@@ -130,8 +130,19 @@ export default function App() {
 
   const itemSlotPositions = Object.entries(gameState.slotItems ?? {}).map(([slotId]) => {
     const slot = WORLD_SLOTS.find(s => s.id === slotId)
-    return slot ? { x: slot.xPct * window.innerWidth } : null
+    return slot ? { x: slot.xPct * window.innerWidth, slotId } : null
   }).filter(Boolean)
+
+  // Exclusive slot locking — only one character appreciates a slot at a time
+  const lockedSlotsRef = useRef({})
+  const tryLockSlot = useCallback((slotId, charId) => {
+    if (lockedSlotsRef.current[slotId]) return false
+    lockedSlotsRef.current[slotId] = charId
+    return true
+  }, [])
+  const releaseSlot = useCallback((slotId) => {
+    delete lockedSlotsRef.current[slotId]
+  }, [])
 
   function handlePlaceItem(slotId, itemId) {
     updateState({ slotItems: { ...(gameState.slotItems ?? {}), [slotId]: itemId } })
@@ -175,6 +186,8 @@ export default function App() {
               isDamaged={isDamaged}
               onEnterHouse={() => setIsIndoor(true)}
               biome={biome}
+              buildingPos={gameState.buildingPos ?? { x: 0, y: 0 }}
+              onBuildingMove={pos => updateState({ buildingPos: pos })}
             />
             {/* Outdoor characters — z:3 keeps them above the foreground layer (z:2) */}
             <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 3 }}>
@@ -188,6 +201,8 @@ export default function App() {
                   timeState={effectiveTimeState}
                   totalCharacters={characters.length}
                   itemSlots={itemSlotPositions}
+                  tryLockSlot={tryLockSlot}
+                  releaseSlot={releaseSlot}
                 />
               ))}
               <AnimatePresence>

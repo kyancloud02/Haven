@@ -15,7 +15,7 @@ const WALK_SPEED = 80    // px / second
 
 function rand(lo, hi) { return lo + Math.random() * (hi - lo) }
 
-export function useBehavior({ x, spriteIndex, totalCharacters, isDragging, isGuard, itemSlots = [] }) {
+export function useBehavior({ x, spriteIndex, totalCharacters, isDragging, isGuard, itemSlots = [], tryLockSlot, releaseSlot, heroId }) {
   const stateRef = useRef('boot')
   const timerRef = useRef(null)
   const stopRef  = useRef(null)   // cancels the current tween
@@ -69,18 +69,22 @@ export function useBehavior({ x, spriteIndex, totalCharacters, isDragging, isGua
     const w    = W()
 
     if (s === 'idle') {
-      // Prioritise item slots: characters are drawn to placed items
+      // Prioritise item slots: characters are drawn to placed items (one at a time)
       if (itemSlots.length > 0 && Math.random() < 0.40) {
-        const target = itemSlots[Math.floor(Math.random() * itemSlots.length)]
-        stateRef.current = 'wandering'
-        moveTo(target.x, () => {
-          setIsAppreciating(true)
-          timerRef.current = setTimeout(() => {
-            setIsAppreciating(false)
-            schedule('idle', rand(2_000, 5_000))
-          }, 2_500)
-        })
-        return
+        const shuffled = [...itemSlots].sort(() => Math.random() - 0.5)
+        const target = shuffled.find(s => !tryLockSlot || tryLockSlot(s.slotId, heroId))
+        if (target) {
+          stateRef.current = 'wandering'
+          moveTo(target.x, () => {
+            setIsAppreciating(true)
+            timerRef.current = setTimeout(() => {
+              setIsAppreciating(false)
+              releaseSlot?.(target.slotId)
+              schedule('idle', rand(2_000, 5_000))
+            }, 2_500)
+          })
+          return
+        }
       }
 
       const roll = Math.random()
